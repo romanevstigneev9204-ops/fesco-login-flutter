@@ -203,6 +203,46 @@ begin
   end;
 end;
 
+procedure TestModesAndTimer;
+var
+  G: TGame;
+begin
+  WriteLn('--- Modes / Sprint / Ultra ---');
+  Check(FormatRaceTime(65032) = '01:05.03', 'FormatRaceTime 1:05.03');
+  Check(GameModeName(gmSprint40) = '40-Line Sprint', 'Sprint mode name');
+
+  G := TGame.Create;
+  try
+    G.SetNextSequence([pkT, pkI, pkO, pkJ, pkL, pkS, pkZ]);
+    G.NewGame(gmSprint40);
+    Check(G.Mode = gmSprint40, 'Sprint mode set');
+    Check(G.LinesRemaining = SprintGoalLines, 'Sprint starts with 40 left');
+    Check(G.ElapsedMs = 0, 'Sprint timer starts at 0');
+    G.AdvanceTime(1500);
+    Check(G.ElapsedMs = 1500, 'AdvanceTime accumulates');
+    G.TogglePause;
+    G.AdvanceTime(500);
+    Check(G.ElapsedMs = 1500, 'AdvanceTime ignored while paused');
+    G.TogglePause;
+  finally
+    G.Free;
+  end;
+
+  G := TGame.Create;
+  try
+    G.SetNextSequence([pkO, pkI, pkT, pkJ, pkL, pkS, pkZ]);
+    G.NewGame(gmUltra);
+    Check(G.Mode = gmUltra, 'Ultra mode set');
+    Check(G.TimeRemainingMs = UltraTimeLimitMs, 'Ultra full time left');
+    G.AdvanceTime(UltraTimeLimitMs);
+    Check(G.GameOver, 'Ultra ends at 2:00');
+    Check(G.FinishReason = frTimeUp, 'Ultra finish is time up');
+    Check(G.ElapsedMs = UltraTimeLimitMs, 'Ultra clamps elapsed');
+  finally
+    G.Free;
+  end;
+end;
+
 procedure TestFullLineIntegration;
 var
   Board: TBoardCells;
@@ -240,6 +280,7 @@ begin
   TestLineClearViaGame;
   TestGravityLock;
   TestGameOver;
+  TestModesAndTimer;
   TestFullLineIntegration;
   WriteLn;
   if Failed = 0 then

@@ -14,138 +14,279 @@ object MainForm: TMainForm
   OnKeyDown = FormKeyDown
   Position = poScreenCenter
   LCLVersion = '3.0.0.0'
-  object PaintBoard: TPaintBox
-    Left = 16
-    Height = 560
-    Top = 16
-    Width = 280
-    OnPaint = PaintBoardPaint
-  end
-  object PanelSide: TPanel
-    Left = 312
-    Height = 560
-    Top = 16
-    Width = 192
+  object PanelPlay: TPanel
+    Left = 0
+    Height = 620
+    Top = 0
+    Width = 520
     BevelOuter = bvNone
-    Color = 2697513
+    Color = 2105376
     ParentColor = False
     TabOrder = 0
-    object LblTitle: TLabel
-      Left = 8
-      Height = 28
-      Top = 8
-      Width = 176
+    Visible = False
+    object PaintBoard: TPaintBox
+      Left = 16
+      Height = 560
+      Top = 16
+      Width = 280
+      OnPaint = PaintBoardPaint
+    end
+    object PanelSide: TPanel
+      Left = 312
+      Height = 560
+      Top = 16
+      Width = 192
+      BevelOuter = bvNone
+      Color = 2697513
+      ParentColor = False
+      TabOrder = 0
+      object LblTitle: TLabel
+        Left = 8
+        Height = 28
+        Top = 8
+        Width = 176
+        Alignment = taCenter
+        Caption = 'TETRIS'
+        Font.Color = 16777215
+        Font.Height = -20
+        Font.Style = [fsBold]
+        ParentColor = False
+        ParentFont = False
+      end
+      object LblMode: TLabel
+        Left = 8
+        Height = 17
+        Top = 36
+        Width = 176
+        Alignment = taCenter
+        Caption = 'Marathon'
+        Font.Color = 12632256
+        ParentColor = False
+        ParentFont = False
+      end
+      object LblNextCaption: TLabel
+        Left = 8
+        Height = 17
+        Top = 60
+        Width = 176
+        Alignment = taCenter
+        Caption = 'NEXT'
+        Font.Color = 12632256
+        ParentColor = False
+        ParentFont = False
+      end
+      object PaintNext: TPaintBox
+        Left = 36
+        Height = 100
+        Top = 80
+        Width = 120
+        OnPaint = PaintNextPaint
+      end
+      object LblStat1Caption: TLabel
+        Left = 12
+        Height = 17
+        Top = 196
+        Width = 168
+        Caption = 'SCORE'
+        Font.Color = 12632256
+        ParentColor = False
+        ParentFont = False
+      end
+      object LblStat1: TLabel
+        Left = 12
+        Height = 24
+        Top = 216
+        Width = 168
+        Caption = '0'
+        Font.Color = 16777215
+        Font.Height = -19
+        Font.Style = [fsBold]
+        ParentColor = False
+        ParentFont = False
+      end
+      object LblStat2Caption: TLabel
+        Left = 12
+        Height = 17
+        Top = 252
+        Width = 168
+        Caption = 'LEVEL'
+        Font.Color = 12632256
+        ParentColor = False
+        ParentFont = False
+      end
+      object LblStat2: TLabel
+        Left = 12
+        Height = 24
+        Top = 272
+        Width = 168
+        Caption = '1'
+        Font.Color = 16777215
+        Font.Height = -19
+        Font.Style = [fsBold]
+        ParentColor = False
+        ParentFont = False
+      end
+      object LblStat3Caption: TLabel
+        Left = 12
+        Height = 17
+        Top = 308
+        Width = 168
+        Caption = 'LINES'
+        Font.Color = 12632256
+        ParentColor = False
+        ParentFont = False
+      end
+      object LblStat3: TLabel
+        Left = 12
+        Height = 24
+        Top = 328
+        Width = 168
+        Caption = '0'
+        Font.Color = 16777215
+        Font.Height = -19
+        Font.Style = [fsBold]
+        ParentColor = False
+        ParentFont = False
+      end
+      object LblStatus: TLabel
+        Left = 8
+        Height = 56
+        Top = 368
+        Width = 176
+        Alignment = taCenter
+        Font.Color = 65535
+        Font.Style = [fsBold]
+        ParentColor = False
+        ParentFont = False
+        WordWrap = True
+      end
+      object LblHelp: TLabel
+        Left = 8
+        Height = 120
+        Top = 432
+        Width = 176
+        Caption = '← → move'#10'↓ soft drop'#10'↑ / X rotate'#10'Space hard drop'#10'P pause'#10'Esc menu'#10'R restart'
+        Font.Color = 11184810
+        ParentColor = False
+        ParentFont = False
+      end
+    end
+    object LblCountdown: TLabel
+      Left = 16
+      Height = 80
+      Top = 248
+      Width = 280
+      Alignment = taCenter
+      Caption = '3'
+      Font.Color = 16777215
+      Font.Height = -64
+      Font.Style = [fsBold]
+      ParentColor = False
+      ParentFont = False
+      Visible = False
+    end
+  end
+  object PanelMenu: TPanel
+    Left = 0
+    Height = 620
+    Top = 0
+    Width = 520
+    BevelOuter = bvNone
+    Color = 2105376
+    ParentColor = False
+    TabOrder = 1
+    object LblMenuTitle: TLabel
+      Left = 40
+      Height = 40
+      Top = 48
+      Width = 440
       Alignment = taCenter
       Caption = 'TETRIS'
       Font.Color = 16777215
-      Font.Height = -20
+      Font.Height = -32
       Font.Style = [fsBold]
       ParentColor = False
       ParentFont = False
     end
-    object LblNextCaption: TLabel
-      Left = 8
-      Height = 17
-      Top = 48
-      Width = 176
+    object LblMenuHint: TLabel
+      Left = 40
+      Height = 24
+      Top = 96
+      Width = 440
       Alignment = taCenter
-      Caption = 'NEXT'
+      Caption = 'Choose a mode — ↑↓ / click, Enter to start'
       Font.Color = 12632256
       ParentColor = False
       ParentFont = False
     end
-    object PaintNext: TPaintBox
-      Left = 36
-      Height = 100
-      Top = 72
-      Width = 120
-      OnPaint = PaintNextPaint
-    end
-    object LblScoreCaption: TLabel
-      Left = 12
-      Height = 17
-      Top = 188
-      Width = 168
-      Caption = 'SCORE'
-      Font.Color = 12632256
-      ParentColor = False
-      ParentFont = False
-    end
-    object LblScore: TLabel
-      Left = 12
-      Height = 24
-      Top = 208
-      Width = 168
-      Caption = '0'
-      Font.Color = 16777215
-      Font.Height = -19
-      Font.Style = [fsBold]
-      ParentColor = False
-      ParentFont = False
-    end
-    object LblLevelCaption: TLabel
-      Left = 12
-      Height = 17
-      Top = 248
-      Width = 168
-      Caption = 'LEVEL'
-      Font.Color = 12632256
-      ParentColor = False
-      ParentFont = False
-    end
-    object LblLevel: TLabel
-      Left = 12
-      Height = 24
-      Top = 268
-      Width = 168
-      Caption = '1'
-      Font.Color = 16777215
-      Font.Height = -19
-      Font.Style = [fsBold]
-      ParentColor = False
-      ParentFont = False
-    end
-    object LblLinesCaption: TLabel
-      Left = 12
-      Height = 17
-      Top = 308
-      Width = 168
-      Caption = 'LINES'
-      Font.Color = 12632256
-      ParentColor = False
-      ParentFont = False
-    end
-    object LblLines: TLabel
-      Left = 12
-      Height = 24
-      Top = 328
-      Width = 168
-      Caption = '0'
-      Font.Color = 16777215
-      Font.Height = -19
-      Font.Style = [fsBold]
-      ParentColor = False
-      ParentFont = False
-    end
-    object LblStatus: TLabel
-      Left = 8
+    object BtnMarathon: TButton
+      Left = 120
       Height = 40
-      Top = 372
-      Width = 176
+      Top = 160
+      Width = 280
+      Caption = '1  Marathon'
+      OnClick = BtnMarathonClick
+      TabOrder = 0
+    end
+    object BtnSprint: TButton
+      Left = 120
+      Height = 40
+      Top = 216
+      Width = 280
+      Caption = '2  40-Line Sprint'
+      OnClick = BtnSprintClick
+      TabOrder = 1
+    end
+    object BtnUltra: TButton
+      Left = 120
+      Height = 40
+      Top = 272
+      Width = 280
+      Caption = '3  Ultra 2:00'
+      OnClick = BtnUltraClick
+      TabOrder = 2
+    end
+    object LblPbMarathon: TLabel
+      Left = 120
+      Height = 18
+      Top = 340
+      Width = 280
       Alignment = taCenter
-      Font.Color = 65535
-      Font.Style = [fsBold]
+      Caption = 'Marathon PB: —'
+      Font.Color = 11184810
       ParentColor = False
       ParentFont = False
-      WordWrap = True
     end
-    object LblHelp: TLabel
-      Left = 8
-      Height = 120
-      Top = 424
-      Width = 176
-      Caption = '← → move'#10'↓ soft drop'#10'↑ / X rotate'#10'Space hard drop'#10'P pause'#10'R restart (game over)'
+    object LblPbSprint: TLabel
+      Left = 120
+      Height = 18
+      Top = 364
+      Width = 280
+      Alignment = taCenter
+      Caption = 'Sprint PB: —'
       Font.Color = 11184810
+      ParentColor = False
+      ParentFont = False
+    end
+    object LblPbUltra: TLabel
+      Left = 120
+      Height = 18
+      Top = 388
+      Width = 280
+      Alignment = taCenter
+      Caption = 'Ultra PB: —'
+      Font.Color = 11184810
+      ParentColor = False
+      ParentFont = False
+    end
+    object LblMenuFooter: TLabel
+      Left = 40
+      Height = 40
+      Top = 520
+      Width = 440
+      Alignment = taCenter
+      Caption = 'Esc quits from this menu'
+      Font.Color = 8421504
       ParentColor = False
       ParentFont = False
     end
