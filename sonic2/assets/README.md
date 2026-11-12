@@ -21,7 +21,7 @@
 
 ## `tiles.png` — 128×16 (тайл 16×16)
 
-Одна строка, восемь тайлов. Индекс `i` → `src_x = i * 16`, `src_y = 0`.
+Одна строка, восемь тайлов. Индекс `i` → `src_x = i * 16`, `src_y = 0`. Emerald Hill.
 
 | i | Символ карты | Содержимое |
 | --- | --- | --- |
@@ -33,6 +33,13 @@
 | 5 | `L` | Сегмент петли |
 | 6 | — | Заполнитель травы |
 | 7 | — | Шахматный декор (фон) |
+
+Остальные зоны — свои листы того же формата (128×16):
+
+`tiles_chemical_plant.png`, `tiles_aquatic_ruin.png`, `tiles_casino_night.png`,
+`tiles_hill_top.png`, `tiles_mystic_cave.png`, `tiles_oil_ocean.png`,
+`tiles_metropolis.png`, `tiles_sky_chase.png`, `tiles_wing_fortress.png`,
+`tiles_death_egg.png`.
 
 ## `objects.png` — 128×128
 

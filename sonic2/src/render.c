@@ -204,6 +204,15 @@ static void draw_object(const Object *o, int cam_x, int cam_y, int time_frames)
     case OBJ_GOAL:
         blit(&g_objects, x - 16, y - 32, 40, 96, 32, 32, 0);
         break;
+    case OBJ_BOSS: {
+        /* Simple egg-pod stand-in: red body + dark glass from monitor/goal cells. */
+        fill_rect(x - 20, y - 40, 40, 36, rgba(200, 40, 40));
+        fill_rect(x - 12, y - 32, 24, 16, rgba(40, 40, 60));
+        fill_rect(x - 16, y - 8, 12, 8, rgba(60, 60, 70));
+        fill_rect(x + 4, y - 8, 12, 8, rgba(60, 60, 70));
+        (void)time_frames;
+        break;
+    }
     default:
         break;
     }
@@ -352,6 +361,15 @@ void game_sfx(const char *name)
     SDL_QueueAudio(g_audio, c->buf, c->len);
 }
 
+int render_set_tiles(const char *tiles_filename)
+{
+    char path[640];
+    const char *name = tiles_filename && tiles_filename[0] ? tiles_filename : "tiles.png";
+    snprintf(path, sizeof path, "%s/%s", g_asset_dir, name);
+    free_img(&g_tiles);
+    return load_img(&g_tiles, path);
+}
+
 int render_init(const char *asset_dir)
 {
     char path[640];
@@ -362,8 +380,7 @@ int render_init(const char *asset_dir)
     snprintf(path, sizeof path, "%s/sonic.png", dir);
     if (load_img(&g_sonic, path) != 0)
         g_assets_ok = 0;
-    snprintf(path, sizeof path, "%s/tiles.png", dir);
-    if (load_img(&g_tiles, path) != 0)
+    if (render_set_tiles("tiles.png") != 0)
         g_assets_ok = 0;
     snprintf(path, sizeof path, "%s/objects.png", dir);
     if (load_img(&g_objects, path) != 0)
@@ -445,6 +462,89 @@ void render_title(int blink_on)
     fill_rect(40, 60, 240, 40, rgba(220, 40, 40));
     if (blink_on)
         fill_rect(100, 150, 120, 10, rgba(255, 255, 255));
+}
+
+static void draw_menu_char(int x, int y, char c, uint32_t col)
+{
+    static const unsigned char bits[26][5] = {
+        {0x0E, 0x11, 0x1F, 0x11, 0x11}, {0x1E, 0x11, 0x1E, 0x11, 0x1E},
+        {0x0E, 0x11, 0x10, 0x11, 0x0E}, {0x1E, 0x11, 0x11, 0x11, 0x1E},
+        {0x1F, 0x10, 0x1E, 0x10, 0x1F}, {0x1F, 0x10, 0x1E, 0x10, 0x10},
+        {0x0E, 0x10, 0x13, 0x11, 0x0E}, {0x11, 0x11, 0x1F, 0x11, 0x11},
+        {0x1F, 0x04, 0x04, 0x04, 0x1F}, {0x01, 0x01, 0x01, 0x11, 0x0E},
+        {0x11, 0x12, 0x1C, 0x12, 0x11}, {0x10, 0x10, 0x10, 0x10, 0x1F},
+        {0x11, 0x1B, 0x15, 0x11, 0x11}, {0x11, 0x19, 0x15, 0x13, 0x11},
+        {0x0E, 0x11, 0x11, 0x11, 0x0E}, {0x1E, 0x11, 0x1E, 0x10, 0x10},
+        {0x0E, 0x11, 0x15, 0x12, 0x0D}, {0x1E, 0x11, 0x1E, 0x12, 0x11},
+        {0x0F, 0x10, 0x0E, 0x01, 0x1E}, {0x1F, 0x04, 0x04, 0x04, 0x04},
+        {0x11, 0x11, 0x11, 0x11, 0x0E}, {0x11, 0x11, 0x11, 0x0A, 0x04},
+        {0x11, 0x11, 0x15, 0x1B, 0x11}, {0x11, 0x0A, 0x04, 0x0A, 0x11},
+        {0x11, 0x0A, 0x04, 0x04, 0x04}, {0x1F, 0x02, 0x04, 0x08, 0x1F},
+    };
+    if (c >= 'a' && c <= 'z')
+        c = (char)(c - 'a' + 'A');
+    if (c < 'A' || c > 'Z')
+        return;
+    const unsigned char *colbits = bits[c - 'A'];
+    for (int row = 0; row < 5; row++) {
+        unsigned char rowb = colbits[row];
+        for (int colb = 0; colb < 5; colb++) {
+            if (rowb & (1u << (4 - colb)))
+                pix(x + colb, y + row, col);
+        }
+    }
+}
+
+void render_zone_menu(const char *const *names, int count, int selected, int blink_on)
+{
+    int w = platform_width();
+    int h = platform_height();
+    uint32_t *fb = platform_framebuffer();
+    uint32_t bg = rgba(16, 28, 64);
+    for (int i = 0; i < w * h; i++)
+        fb[i] = bg;
+
+    fill_rect(0, 0, w, 24, rgba(32, 56, 120));
+    fill_rect(8, 6, 12, 12, rgba(240, 200, 40));
+    const char *title = "SELECT ZONE";
+    int tx = 28;
+    for (const char *p = title; *p; p++) {
+        if (*p == ' ') {
+            tx += 6;
+            continue;
+        }
+        draw_menu_char(tx, 8, *p, rgba(230, 230, 240));
+        tx += 6;
+    }
+
+    int visible = count < 11 ? count : 11;
+    int top = selected - visible / 2;
+    if (top < 0)
+        top = 0;
+    if (top > count - visible)
+        top = count - visible;
+    if (top < 0)
+        top = 0;
+
+    for (int i = 0; i < visible; i++) {
+        int idx = top + i;
+        int y = 36 + i * 16;
+        int sel = (idx == selected);
+        if (sel)
+            fill_rect(12, y - 2, w - 24, 14, rgba(48, 88, 160));
+        uint32_t col = sel && blink_on ? rgba(255, 255, 120) : rgba(230, 230, 240);
+        int x = 28;
+        for (const char *p = names[idx]; *p && x < w - 16; p++) {
+            if (*p == ' ') {
+                x += 6;
+                continue;
+            }
+            draw_menu_char(x, y, *p, col);
+            x += 6;
+        }
+        if (sel)
+            fill_rect(16, y + 2, 6, 6, rgba(255, 220, 60));
+    }
 }
 
 void render_shutdown(void)

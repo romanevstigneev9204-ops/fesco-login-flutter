@@ -10,7 +10,8 @@ typedef enum ObjKind {
     OBJ_SPIKE,
     OBJ_MOTOBUG,
     OBJ_CHECKPOINT,
-    OBJ_GOAL
+    OBJ_GOAL,
+    OBJ_BOSS
 } ObjKind;
 typedef enum MonitorKind {
     MON_RINGS = 1,
@@ -35,6 +36,7 @@ typedef struct ObjEvent {
     int speed_shoes;
     int invincible;
     int extra_life;
+    int win; /* boss defeated */
 } ObjEvent;
 int objects_load(Object *dst, int max, const char *path);
 void objects_tick(Object *objs, int n, Player *p, ObjEvent *ev);

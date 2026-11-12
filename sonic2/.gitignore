@@ -5,6 +5,7 @@ build/sonic2.exe
 build/SDL2.dll
 build/*.ppm
 build/test_player
+build/test_boss
 build/*.o
 build/stubs/*.o
 src/*.o
