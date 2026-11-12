@@ -4,7 +4,7 @@ object MainForm: TMainForm
   Top = 120
   Width = 520
   BorderStyle = bsSingle
-  Caption = 'Tetris'
+  Caption = 'Тетрис'
   ClientHeight = 620
   ClientWidth = 520
   Color = 2105376
@@ -59,7 +59,7 @@ object MainForm: TMainForm
         Top = 36
         Width = 176
         Alignment = taCenter
-        Caption = 'Marathon'
+        Caption = 'Марафон'
         Font.Color = 12632256
         ParentColor = False
         ParentFont = False
@@ -70,7 +70,7 @@ object MainForm: TMainForm
         Top = 60
         Width = 176
         Alignment = taCenter
-        Caption = 'NEXT'
+        Caption = 'ДАЛЕЕ'
         Font.Color = 12632256
         ParentColor = False
         ParentFont = False
@@ -87,7 +87,7 @@ object MainForm: TMainForm
         Height = 17
         Top = 196
         Width = 168
-        Caption = 'SCORE'
+        Caption = 'ОЧКИ'
         Font.Color = 12632256
         ParentColor = False
         ParentFont = False
@@ -109,7 +109,7 @@ object MainForm: TMainForm
         Height = 17
         Top = 252
         Width = 168
-        Caption = 'LEVEL'
+        Caption = 'УРОВЕНЬ'
         Font.Color = 12632256
         ParentColor = False
         ParentFont = False
@@ -131,7 +131,7 @@ object MainForm: TMainForm
         Height = 17
         Top = 308
         Width = 168
-        Caption = 'LINES'
+        Caption = 'ЛИНИИ'
         Font.Color = 12632256
         ParentColor = False
         ParentFont = False
@@ -165,7 +165,7 @@ object MainForm: TMainForm
         Height = 120
         Top = 432
         Width = 176
-        Caption = '← → move'#10'↓ soft drop'#10'↑ / X rotate'#10'Space hard drop'#10'P pause'#10'Esc menu'#10'R restart'
+        Caption = '← → влево/вправо'#10'↓ мягкий сброс'#10'↑ / X поворот'#10'Пробел жёсткий сброс'#10'P пауза'#10'Esc в меню'#10'R заново'
         Font.Color = 11184810
         ParentColor = False
         ParentFont = False
@@ -173,16 +173,19 @@ object MainForm: TMainForm
     end
     object LblCountdown: TLabel
       Left = 16
-      Height = 80
-      Top = 248
+      Height = 100
+      Top = 246
       Width = 280
       Alignment = taCenter
+      AutoSize = False
       Caption = '3'
       Font.Color = 16777215
       Font.Height = -64
       Font.Style = [fsBold]
+      Layout = tlCenter
       ParentColor = False
       ParentFont = False
+      Transparent = True
       Visible = False
     end
   end
@@ -214,7 +217,7 @@ object MainForm: TMainForm
       Top = 96
       Width = 440
       Alignment = taCenter
-      Caption = 'Choose a mode — ↑↓ / click, Enter to start'
+      Caption = 'Выберите режим — ↑↓ / клик, Enter — старт'
       Font.Color = 12632256
       ParentColor = False
       ParentFont = False
@@ -224,7 +227,7 @@ object MainForm: TMainForm
       Height = 40
       Top = 160
       Width = 280
-      Caption = '1  Marathon'
+      Caption = '1  Марафон'
       OnClick = BtnMarathonClick
       TabOrder = 0
     end
@@ -233,7 +236,7 @@ object MainForm: TMainForm
       Height = 40
       Top = 216
       Width = 280
-      Caption = '2  40-Line Sprint'
+      Caption = '2  Спринт 40 линий'
       OnClick = BtnSprintClick
       TabOrder = 1
     end
@@ -242,7 +245,7 @@ object MainForm: TMainForm
       Height = 40
       Top = 272
       Width = 280
-      Caption = '3  Ultra 2:00'
+      Caption = '3  Ультра 2:00'
       OnClick = BtnUltraClick
       TabOrder = 2
     end
@@ -252,7 +255,7 @@ object MainForm: TMainForm
       Top = 340
       Width = 280
       Alignment = taCenter
-      Caption = 'Marathon PB: —'
+      Caption = 'Марафон рекорд: —'
       Font.Color = 11184810
       ParentColor = False
       ParentFont = False
@@ -263,7 +266,7 @@ object MainForm: TMainForm
       Top = 364
       Width = 280
       Alignment = taCenter
-      Caption = 'Sprint PB: —'
+      Caption = 'Спринт рекорд: —'
       Font.Color = 11184810
       ParentColor = False
       ParentFont = False
@@ -274,7 +277,7 @@ object MainForm: TMainForm
       Top = 388
       Width = 280
       Alignment = taCenter
-      Caption = 'Ultra PB: —'
+      Caption = 'Ультра рекорд: —'
       Font.Color = 11184810
       ParentColor = False
       ParentFont = False
@@ -285,7 +288,7 @@ object MainForm: TMainForm
       Top = 520
       Width = 440
       Alignment = taCenter
-      Caption = 'Esc quits from this menu'
+      Caption = 'Esc — выход из меню'
       Font.Color = 8421504
       ParentColor = False
       ParentFont = False

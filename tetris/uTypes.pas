@@ -1,6 +1,7 @@
 unit uTypes;
 
 {$mode objfpc}{$H+}
+{$codepage UTF8}
 
 interface
 
@@ -64,11 +65,11 @@ end;
 function GameModeName(Mode: TGameMode): string;
 begin
   case Mode of
-    gmMarathon: Result := 'Marathon';
-    gmSprint40: Result := '40-Line Sprint';
-    gmUltra: Result := 'Ultra 2:00';
+    gmMarathon: Result := 'Марафон';
+    gmSprint40: Result := 'Спринт 40 линий';
+    gmUltra: Result := 'Ультра 2:00';
   else
-    Result := 'Unknown';
+    Result := 'Неизвестно';
   end;
 end;
 
