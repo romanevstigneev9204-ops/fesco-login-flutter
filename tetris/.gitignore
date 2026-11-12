@@ -1,0 +1,8 @@
+*.o
+*.ppu
+*.a
+*.or
+*.rsj
+tests/bin/
+*.exe
+tetris_harness
