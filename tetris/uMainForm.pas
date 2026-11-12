@@ -6,25 +6,40 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,
-  LCLType, uTypes, uPieces, uGame;
+  LCLType, uTypes, uPieces, uGame, uScores;
 
 type
+  TAppPhase = (apMenu, apCountdown, apPlaying);
+
   { TMainForm }
 
   TMainForm = class(TForm)
+    PanelMenu: TPanel;
+    PanelPlay: TPanel;
     PaintBoard: TPaintBox;
     PaintNext: TPaintBox;
     PanelSide: TPanel;
     LblTitle: TLabel;
-    LblScoreCaption: TLabel;
-    LblScore: TLabel;
-    LblLevelCaption: TLabel;
-    LblLevel: TLabel;
-    LblLinesCaption: TLabel;
-    LblLines: TLabel;
+    LblMode: TLabel;
+    LblStat1Caption: TLabel;
+    LblStat1: TLabel;
+    LblStat2Caption: TLabel;
+    LblStat2: TLabel;
+    LblStat3Caption: TLabel;
+    LblStat3: TLabel;
     LblNextCaption: TLabel;
     LblStatus: TLabel;
     LblHelp: TLabel;
+    LblCountdown: TLabel;
+    LblMenuTitle: TLabel;
+    LblMenuHint: TLabel;
+    LblMenuFooter: TLabel;
+    LblPbMarathon: TLabel;
+    LblPbSprint: TLabel;
+    LblPbUltra: TLabel;
+    BtnMarathon: TButton;
+    BtnSprint: TButton;
+    BtnUltra: TButton;
     TimerGame: TTimer;
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -32,13 +47,32 @@ type
     procedure PaintBoardPaint(Sender: TObject);
     procedure PaintNextPaint(Sender: TObject);
     procedure TimerGameTimer(Sender: TObject);
+    procedure BtnMarathonClick(Sender: TObject);
+    procedure BtnSprintClick(Sender: TObject);
+    procedure BtnUltraClick(Sender: TObject);
   private
     FGame: TGame;
     FCellSize: Integer;
+    FPhase: TAppPhase;
+    FSelectedMode: TGameMode;
+    FMenuIndex: Integer;
+    FCountdownLeft: Integer;
+    FCountdownAccMs: Integer;
+    FPbReported: Boolean;
+    FLastPbImproved: Boolean;
+    procedure ShowMenu;
+    procedure StartMode(AMode: TGameMode);
+    procedure BeginCountdown;
+    procedure BeginPlaying;
+    procedure ReturnToMenu;
+    procedure RestartSameMode;
     procedure UpdateHud;
+    procedure RefreshMenuPb;
+    procedure HighlightMenuSelection;
     procedure DrawCell(ACanvas: TCanvas; X, Y, Size: Integer; Cell: TCellValue);
     function ColorForCell(Cell: TCellValue): TColor;
-    procedure RestartGame;
+    procedure HandleFinishedRun;
+    function StatusText: string;
   public
   end;
 
@@ -52,6 +86,7 @@ implementation
 const
   BoardCellPx = 28;
   NextCellPx = 22;
+  CountdownStepMs = 1000;
 
 function TMainForm.ColorForCell(Cell: TCellValue): TColor;
 begin
@@ -86,7 +121,6 @@ begin
   begin
     ACanvas.Pen.Color := RGBToColor(20, 20, 24);
     ACanvas.Rectangle(R);
-    { light edge }
     ACanvas.Pen.Color := RGBToColor(255, 255, 255);
     ACanvas.MoveTo(R.Left + 1, R.Bottom - 2);
     ACanvas.LineTo(R.Left + 1, R.Top + 1);
@@ -98,11 +132,15 @@ procedure TMainForm.FormCreate(Sender: TObject);
 begin
   FCellSize := BoardCellPx;
   FGame := TGame.Create;
-  FGame.NewGame;
+  FPhase := apMenu;
+  FMenuIndex := 0;
+  FSelectedMode := gmMarathon;
+  FPbReported := False;
+  FLastPbImproved := False;
   KeyPreview := True;
   TimerGame.Interval := 16;
   TimerGame.Enabled := True;
-  UpdateHud;
+  ShowMenu;
 end;
 
 procedure TMainForm.FormDestroy(Sender: TObject);
@@ -111,86 +149,369 @@ begin
   FreeAndNil(FGame);
 end;
 
-procedure TMainForm.RestartGame;
+procedure TMainForm.RefreshMenuPb;
+var
+  B: TPersonalBests;
 begin
-  FGame.NewGame;
+  B := LoadPersonalBests;
+  if B.MarathonScore > 0 then
+    LblPbMarathon.Caption := Format('Marathon PB: %d', [B.MarathonScore])
+  else
+    LblPbMarathon.Caption := 'Marathon PB: —';
+  if B.Sprint40Ms > 0 then
+    LblPbSprint.Caption := 'Sprint PB: ' + FormatRaceTime(B.Sprint40Ms)
+  else
+    LblPbSprint.Caption := 'Sprint PB: —';
+  if B.UltraScore > 0 then
+    LblPbUltra.Caption := Format('Ultra PB: %d', [B.UltraScore])
+  else
+    LblPbUltra.Caption := 'Ultra PB: —';
+end;
+
+procedure TMainForm.HighlightMenuSelection;
+begin
+  BtnMarathon.Font.Style := [];
+  BtnSprint.Font.Style := [];
+  BtnUltra.Font.Style := [];
+  case FMenuIndex of
+    0: BtnMarathon.Font.Style := [fsBold];
+    1: BtnSprint.Font.Style := [fsBold];
+    2: BtnUltra.Font.Style := [fsBold];
+  end;
+end;
+
+procedure TMainForm.ShowMenu;
+begin
+  FPhase := apMenu;
+  PanelMenu.Visible := True;
+  PanelPlay.Visible := False;
+  LblCountdown.Visible := False;
+  RefreshMenuPb;
+  HighlightMenuSelection;
+  Caption := 'Tetris';
+end;
+
+procedure TMainForm.StartMode(AMode: TGameMode);
+begin
+  FSelectedMode := AMode;
+  FGame.NewGame(AMode);
+  FPbReported := False;
+  FLastPbImproved := False;
+  PanelMenu.Visible := False;
+  PanelPlay.Visible := True;
+  LblMode.Caption := GameModeName(AMode);
+  Caption := 'Tetris — ' + GameModeName(AMode);
+  BeginCountdown;
   UpdateHud;
   PaintBoard.Invalidate;
   PaintNext.Invalidate;
+end;
+
+procedure TMainForm.BeginCountdown;
+begin
+  FPhase := apCountdown;
+  FCountdownLeft := 3;
+  FCountdownAccMs := 0;
+  FGame.TogglePause; { pause until countdown ends }
+  LblCountdown.Caption := '3';
+  LblCountdown.Visible := True;
+  LblStatus.Caption := 'Get ready';
+end;
+
+procedure TMainForm.BeginPlaying;
+begin
+  FPhase := apPlaying;
+  LblCountdown.Visible := False;
+  if FGame.Paused then
+    FGame.TogglePause;
+  LblStatus.Caption := '';
+end;
+
+procedure TMainForm.ReturnToMenu;
+begin
+  ShowMenu;
+end;
+
+procedure TMainForm.RestartSameMode;
+begin
+  StartMode(FSelectedMode);
+end;
+
+procedure TMainForm.BtnMarathonClick(Sender: TObject);
+begin
+  FMenuIndex := 0;
+  StartMode(gmMarathon);
+end;
+
+procedure TMainForm.BtnSprintClick(Sender: TObject);
+begin
+  FMenuIndex := 1;
+  StartMode(gmSprint40);
+end;
+
+procedure TMainForm.BtnUltraClick(Sender: TObject);
+begin
+  FMenuIndex := 2;
+  StartMode(gmUltra);
+end;
+
+procedure TMainForm.HandleFinishedRun;
+var
+  Bests: TPersonalBests;
+begin
+  if FPbReported or (FGame = nil) or (not FGame.GameOver) then
+    Exit;
+  FPbReported := True;
+  FLastPbImproved := TryUpdatePersonalBest(
+    FGame.Mode, FGame.ElapsedMs, FGame.Score, FGame.FinishReason, Bests);
+end;
+
+function TMainForm.StatusText: string;
+begin
+  Result := '';
+  if FPhase = apCountdown then
+  begin
+    Result := 'Get ready';
+    Exit;
+  end;
+  if FGame = nil then
+    Exit;
+  if FGame.GameOver then
+  begin
+    case FGame.FinishReason of
+      frGoalReached:
+        Result := 'CLEAR! ' + FormatRaceTime(FGame.ElapsedMs);
+      frTimeUp:
+        Result := 'TIME UP' + LineEnding + 'Score ' + IntToStr(FGame.Score);
+      frTopOut:
+        Result := 'TOP OUT';
+    else
+      Result := 'GAME OVER';
+    end;
+    if FLastPbImproved then
+      Result := Result + LineEnding + 'NEW PB!';
+    Result := Result + LineEnding + 'R retry · Esc menu';
+  end
+  else if FGame.Paused then
+    Result := 'PAUSED' + LineEnding + 'Esc menu';
 end;
 
 procedure TMainForm.UpdateHud;
 begin
-  LblScore.Caption := IntToStr(FGame.Score);
-  LblLevel.Caption := IntToStr(FGame.Level);
-  LblLines.Caption := IntToStr(FGame.Lines);
-  if FGame.GameOver then
-    LblStatus.Caption := 'GAME OVER' + LineEnding + 'Press R to restart'
-  else if FGame.Paused then
-    LblStatus.Caption := 'PAUSED'
+  if FGame = nil then
+    Exit;
+
+  LblMode.Caption := GameModeName(FGame.Mode);
+
+  case FGame.Mode of
+    gmSprint40:
+      begin
+        LblStat1Caption.Caption := 'TIME';
+        LblStat1.Caption := FormatRaceTime(FGame.ElapsedMs);
+        LblStat2Caption.Caption := 'LEFT';
+        LblStat2.Caption := IntToStr(FGame.LinesRemaining);
+        LblStat3Caption.Caption := 'LINES';
+        LblStat3.Caption := Format('%d / %d', [FGame.Lines, SprintGoalLines]);
+      end;
+    gmUltra:
+      begin
+        LblStat1Caption.Caption := 'SCORE';
+        LblStat1.Caption := IntToStr(FGame.Score);
+        LblStat2Caption.Caption := 'LEFT';
+        LblStat2.Caption := FormatRaceTime(FGame.TimeRemainingMs);
+        LblStat3Caption.Caption := 'LINES';
+        LblStat3.Caption := IntToStr(FGame.Lines);
+      end;
   else
-    LblStatus.Caption := '';
+    begin
+      LblStat1Caption.Caption := 'SCORE';
+      LblStat1.Caption := IntToStr(FGame.Score);
+      LblStat2Caption.Caption := 'LEVEL';
+      LblStat2.Caption := IntToStr(FGame.Level);
+      LblStat3Caption.Caption := 'LINES';
+      LblStat3.Caption := IntToStr(FGame.Lines);
+    end;
+  end;
+
+  if FGame.GameOver then
+    HandleFinishedRun;
+  LblStatus.Caption := StatusText;
 end;
 
 procedure TMainForm.TimerGameTimer(Sender: TObject);
+var
+  Dt: Integer;
 begin
   if FGame = nil then
     Exit;
-  FGame.Tick;
-  UpdateHud;
-  PaintBoard.Invalidate;
-  PaintNext.Invalidate;
+
+  Dt := TimerGame.Interval;
+  if Dt <= 0 then
+    Dt := 16;
+
+  case FPhase of
+    apMenu:
+      Exit;
+    apCountdown:
+      begin
+        Inc(FCountdownAccMs, Dt);
+        if FCountdownAccMs >= CountdownStepMs then
+        begin
+          Dec(FCountdownAccMs, CountdownStepMs);
+          Dec(FCountdownLeft);
+          if FCountdownLeft > 0 then
+            LblCountdown.Caption := IntToStr(FCountdownLeft)
+          else if FCountdownLeft = 0 then
+            LblCountdown.Caption := 'GO'
+          else
+            BeginPlaying;
+        end;
+        PaintBoard.Invalidate;
+      end;
+    apPlaying:
+      begin
+        FGame.AdvanceTime(Dt);
+        FGame.Tick;
+        UpdateHud;
+        PaintBoard.Invalidate;
+        PaintNext.Invalidate;
+      end;
+  end;
 end;
 
 procedure TMainForm.FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
 begin
-  if FGame = nil then
-    Exit;
+  case FPhase of
+    apMenu:
+      begin
+        case Key of
+          VK_UP:
+            begin
+              if FMenuIndex > 0 then
+                Dec(FMenuIndex)
+              else
+                FMenuIndex := 2;
+              HighlightMenuSelection;
+              Key := 0;
+            end;
+          VK_DOWN:
+            begin
+              if FMenuIndex < 2 then
+                Inc(FMenuIndex)
+              else
+                FMenuIndex := 0;
+              HighlightMenuSelection;
+              Key := 0;
+            end;
+          VK_RETURN, VK_SPACE:
+            begin
+              case FMenuIndex of
+                0: StartMode(gmMarathon);
+                1: StartMode(gmSprint40);
+                2: StartMode(gmUltra);
+              end;
+              Key := 0;
+            end;
+          Ord('1'):
+            begin
+              StartMode(gmMarathon);
+              Key := 0;
+            end;
+          Ord('2'):
+            begin
+              StartMode(gmSprint40);
+              Key := 0;
+            end;
+          Ord('3'):
+            begin
+              StartMode(gmUltra);
+              Key := 0;
+            end;
+          VK_ESCAPE:
+            begin
+              Close;
+              Key := 0;
+            end;
+        end;
+      end;
 
-  case Key of
-    VK_LEFT:
+    apCountdown:
       begin
-        FGame.MoveLeft;
-        Key := 0;
+        if Key = VK_ESCAPE then
+        begin
+          ReturnToMenu;
+          Key := 0;
+        end;
       end;
-    VK_RIGHT:
+
+    apPlaying:
       begin
-        FGame.MoveRight;
-        Key := 0;
+        if FGame = nil then
+          Exit;
+
+        case Key of
+          VK_ESCAPE:
+            begin
+              ReturnToMenu;
+              Key := 0;
+            end;
+          VK_LEFT:
+            begin
+              if not FGame.GameOver then
+                FGame.MoveLeft;
+              Key := 0;
+            end;
+          VK_RIGHT:
+            begin
+              if not FGame.GameOver then
+                FGame.MoveRight;
+              Key := 0;
+            end;
+          VK_DOWN:
+            begin
+              if not FGame.GameOver then
+                FGame.SoftDrop;
+              Key := 0;
+            end;
+          VK_UP, Ord('X'), Ord('x'):
+            begin
+              if not FGame.GameOver then
+                FGame.RotateCW;
+              Key := 0;
+            end;
+          VK_SPACE:
+            begin
+              if not FGame.GameOver then
+                FGame.HardDrop;
+              Key := 0;
+            end;
+          Ord('P'), Ord('p'):
+            begin
+              if not FGame.GameOver then
+                FGame.TogglePause;
+              Key := 0;
+            end;
+          Ord('R'), Ord('r'), VK_RETURN:
+            begin
+              if FGame.GameOver then
+                RestartSameMode;
+              Key := 0;
+            end;
+          Ord('M'), Ord('m'):
+            begin
+              if FGame.GameOver then
+                ReturnToMenu;
+              Key := 0;
+            end;
+        else
+          Exit;
+        end;
+
+        UpdateHud;
+        PaintBoard.Invalidate;
+        PaintNext.Invalidate;
       end;
-    VK_DOWN:
-      begin
-        FGame.SoftDrop;
-        Key := 0;
-      end;
-    VK_UP, Ord('X'), Ord('x'):
-      begin
-        FGame.RotateCW;
-        Key := 0;
-      end;
-    VK_SPACE:
-      begin
-        FGame.HardDrop;
-        Key := 0;
-      end;
-    Ord('P'), Ord('p'):
-      begin
-        FGame.TogglePause;
-        Key := 0;
-      end;
-    Ord('R'), Ord('r'), VK_RETURN:
-      begin
-        if FGame.GameOver then
-          RestartGame;
-        Key := 0;
-      end;
-  else
-    Exit;
   end;
-
-  UpdateHud;
-  PaintBoard.Invalidate;
-  PaintNext.Invalidate;
 end;
 
 procedure TMainForm.PaintBoardPaint(Sender: TObject);
@@ -220,7 +541,7 @@ begin
         FCellSize, Cell);
     end;
 
-  if FGame.HasCurrent and (not FGame.GameOver) then
+  if FGame.HasCurrent and (not FGame.GameOver) and (FPhase <> apCountdown) then
   begin
     GetPieceCells(FGame.Current, Cells);
     Cell := PieceKindToCell(FGame.Current.Kind);
@@ -236,7 +557,6 @@ begin
     end;
   end;
 
-  { border }
   PaintBoard.Canvas.Brush.Style := bsClear;
   PaintBoard.Canvas.Pen.Color := RGBToColor(90, 90, 110);
   PaintBoard.Canvas.Rectangle(0, 0, BoardWidth * FCellSize, BoardHeight * FCellSize);

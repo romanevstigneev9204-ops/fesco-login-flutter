@@ -3,7 +3,8 @@ unit uGame;
 {$mode objfpc}{$H+}
 
 { Pure Object Pascal Tetris engine — no LCL.
-  UI reads state and calls NewGame / Tick / movement / RotateCW / TogglePause. }
+  UI reads state and calls NewGame / Tick / AdvanceTime / movement / RotateCW /
+  TogglePause. }
 
 interface
 
@@ -27,6 +28,9 @@ type
     FBagIndex: Integer;
     FBagCount: Integer;
     FRngSeeded: Boolean;
+    FMode: TGameMode;
+    FElapsedMs: Integer;
+    FFinishReason: TFinishReason;
 
     procedure EnsureRng;
     procedure RefillBag;
@@ -39,13 +43,17 @@ type
     function GravityFrames: Integer;
     procedure AddScoreForLines(Cleared: Integer);
     procedure UpdateLevel;
+    procedure Finish(Reason: TFinishReason);
+    procedure CheckSprintGoal;
   public
     constructor Create;
     destructor Destroy; override;
 
-    procedure NewGame;
+    procedure NewGame(AMode: TGameMode = gmMarathon);
     { Advance one frame of gravity. Call from UI timer (~16–50 ms). }
     procedure Tick;
+    { Wall-clock for Sprint/Ultra. Ignored while paused / finished. }
+    procedure AdvanceTime(DeltaMs: Integer);
 
     procedure MoveLeft;
     procedure MoveRight;
@@ -59,6 +67,10 @@ type
     procedure SetNextSequence(const Kinds: array of TPieceKind);
 
     function CellAt(X, Y: Integer): TCellValue;
+    function LinesRemaining: Integer;
+    function TimeRemainingMs: Integer;
+    function IsPlaying: Boolean;
+
     { Board without the falling piece painted in. }
     property Board: TBoardCells read FBoard;
     property Current: TActivePiece read FCurrent;
@@ -69,6 +81,9 @@ type
     property Lines: Integer read FLines;
     property Paused: Boolean read FPaused;
     property GameOver: Boolean read FGameOver;
+    property Mode: TGameMode read FMode;
+    property ElapsedMs: Integer read FElapsedMs;
+    property FinishReason: TFinishReason read FFinishReason;
   end;
 
 { Lines-cleared score multiplier for Level (guideline-ish). }
@@ -83,6 +98,9 @@ begin
   FBagCount := 0;
   FBagIndex := 0;
   FHasCurrent := False;
+  FMode := gmMarathon;
+  FElapsedMs := 0;
+  FFinishReason := frNone;
   ClearBoard(FBoard);
 end;
 
@@ -145,26 +163,45 @@ begin
   FHasCurrent := PieceFits(FBoard, FCurrent);
   Result := FHasCurrent;
   if not Result then
-    FGameOver := True;
+    Finish(frTopOut);
   FGravityCounter := 0;
 end;
 
-procedure TGame.NewGame;
+procedure TGame.Finish(Reason: TFinishReason);
+begin
+  if FFinishReason <> frNone then
+    Exit;
+  FFinishReason := Reason;
+  FGameOver := True;
+  FPaused := False;
+  FHasCurrent := False;
+end;
+
+procedure TGame.CheckSprintGoal;
+begin
+  if (FMode = gmSprint40) and (FLines >= SprintGoalLines) then
+    Finish(frGoalReached);
+end;
+
+procedure TGame.NewGame(AMode: TGameMode);
 begin
   EnsureRng;
   ClearBoard(FBoard);
+  FMode := AMode;
   FScore := 0;
   FLevel := 1;
   FLines := 0;
   FPaused := False;
   FGameOver := False;
+  FFinishReason := frNone;
+  FElapsedMs := 0;
   FGravityCounter := 0;
   FHasCurrent := False;
   if FBagCount = 0 then
     RefillBag;
   FNext := PullFromBag;
   if not TrySpawn then
-    FGameOver := True;
+    Finish(frTopOut);
 end;
 
 procedure TGame.SetNextSequence(const Kinds: array of TPieceKind);
@@ -277,9 +314,12 @@ begin
     Inc(FLines, Cleared);
     AddScoreForLines(Cleared);
     UpdateLevel;
+    CheckSprintGoal;
+    if FGameOver then
+      Exit;
   end;
   if not TrySpawn then
-    FGameOver := True;
+    { Finish already called inside TrySpawn };
 end;
 
 procedure TGame.Tick;
@@ -292,6 +332,18 @@ begin
     FGravityCounter := 0;
     if not TryMove(0, 1) then
       LockAndContinue;
+  end;
+end;
+
+procedure TGame.AdvanceTime(DeltaMs: Integer);
+begin
+  if FGameOver or FPaused or (DeltaMs <= 0) then
+    Exit;
+  Inc(FElapsedMs, DeltaMs);
+  if (FMode = gmUltra) and (FElapsedMs >= UltraTimeLimitMs) then
+  begin
+    FElapsedMs := UltraTimeLimitMs;
+    Finish(frTimeUp);
   end;
 end;
 
@@ -350,6 +402,29 @@ begin
   if (X < 0) or (X >= BoardWidth) or (Y < 0) or (Y >= BoardHeight) then
     Exit(0);
   Result := FBoard[X, Y];
+end;
+
+function TGame.LinesRemaining: Integer;
+begin
+  if FMode <> gmSprint40 then
+    Exit(0);
+  Result := SprintGoalLines - FLines;
+  if Result < 0 then
+    Result := 0;
+end;
+
+function TGame.TimeRemainingMs: Integer;
+begin
+  if FMode <> gmUltra then
+    Exit(0);
+  Result := UltraTimeLimitMs - FElapsedMs;
+  if Result < 0 then
+    Result := 0;
+end;
+
+function TGame.IsPlaying: Boolean;
+begin
+  Result := (not FGameOver) and (not FPaused) and FHasCurrent;
 end;
 
 end.
