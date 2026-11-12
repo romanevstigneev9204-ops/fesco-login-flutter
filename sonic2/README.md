@@ -24,7 +24,7 @@ cd sonic2
 
 ```bash
 ./build/sonic2 --shot
-# → build/shot_title.ppm, build/shot_level.ppm
+# → build/shot_title.ppm, build/shot_level.ppm, build/shot_run.ppm
 ```
 
 Исполняемые файлы в `build/` не коммитятся.

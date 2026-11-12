@@ -61,6 +61,37 @@ static void camera_update(int *cam_x, int *cam_y, const Player *p, const Level *
         *cam_y = max_y;
 }
 
+static void shot_camera(int *cam_x, int *cam_y, const Player *p, const Level *lv)
+{
+    *cam_x = (int)(p->x / FX_ONE) - 120;
+    *cam_y = (int)(p->y / FX_ONE) - 160;
+    int max_x = lv->w * TILE_PX - 320;
+    int max_y = lv->h * TILE_PX - 224;
+    if (max_x < 0)
+        max_x = 0;
+    if (max_y < 0)
+        max_y = 0;
+    if (*cam_x < 0)
+        *cam_x = 0;
+    if (*cam_y < 0)
+        *cam_y = 0;
+    if (*cam_x > max_x)
+        *cam_x = max_x;
+    if (*cam_y > max_y)
+        *cam_y = max_y;
+}
+
+static void save_level_shot(const char *path, const Player *pl, const Level *lv, const Object *objs,
+                            int nobj, int time_frames)
+{
+    int cam_x, cam_y;
+    shot_camera(&cam_x, &cam_y, pl, lv);
+    render_frame(pl, lv, objs, nobj, cam_x, cam_y, pl->rings * 100, time_frames, 3);
+    platform_present();
+    if (platform_save_ppm(path) != 0)
+        fprintf(stderr, "warning: could not write %s\n", path);
+}
+
 static int run_shots(void)
 {
     if (platform_init("Sonic 2 — screenshot") != 0)
@@ -90,15 +121,36 @@ static int run_shots(void)
     fx_t stood_y = pl.y;
     fx_t start_x = pl.x;
     fx_t peak_y = pl.y;
+    int saved_level = 0;
+    int saved_run = 0;
     demo.right = 1;
-    for (int i = 0; i < 70; i++) {
-        demo.jump = (i >= 24 && i <= 55);
-        demo.jump_pressed = (i == 24);
+    for (int i = 0; i < 90 && (!saved_level || !saved_run); i++) {
         player_tick(&pl, &demo, &col);
         ObjEvent ev;
         objects_tick(objs, nobj, &pl, &ev);
         if (ev.rings_delta > 0)
             pl.rings += ev.rings_delta;
+        int moved = (int)((pl.x - start_x) / FX_ONE);
+        if (!saved_level && pl.on_ground && pl.anim == ANIM_WALK && moved >= 36) {
+            save_level_shot("build/shot_level.ppm", &pl, &lv, objs, nobj, i);
+            saved_level = 1;
+        }
+        if (!saved_run && pl.on_ground && pl.anim == ANIM_WALK && moved >= 100) {
+            save_level_shot("build/shot_run.ppm", &pl, &lv, objs, nobj, i);
+            saved_run = 1;
+        }
+    }
+    if (!saved_level || !saved_run || !pl.on_ground) {
+        fprintf(stderr, "ground run shot failed (anim %d grounded %d)\n", (int)pl.anim, pl.on_ground);
+        render_shutdown();
+        platform_shutdown();
+        return 1;
+    }
+    demo.jump = 1;
+    demo.jump_pressed = 1;
+    for (int i = 0; i < 40; i++) {
+        player_tick(&pl, &demo, &col);
+        demo.jump_pressed = 0;
         if (pl.y < peak_y)
             peak_y = pl.y;
     }
@@ -112,28 +164,6 @@ static int run_shots(void)
         platform_shutdown();
         return 1;
     }
-
-    int cam_x = (int)(pl.x / FX_ONE) - 140;
-    int cam_y = (int)(pl.y / FX_ONE) - 150;
-    int max_x = lv.w * TILE_PX - 320;
-    int max_y = lv.h * TILE_PX - 224;
-    if (max_x < 0)
-        max_x = 0;
-    if (max_y < 0)
-        max_y = 0;
-    if (cam_x < 0)
-        cam_x = 0;
-    if (cam_y < 0)
-        cam_y = 0;
-    if (cam_x > max_x)
-        cam_x = max_x;
-    if (cam_y > max_y)
-        cam_y = max_y;
-
-    render_frame(&pl, &lv, objs, nobj, cam_x, cam_y, pl.rings * 100, 70, 3);
-    platform_present();
-    if (platform_save_ppm("build/shot_level.ppm") != 0)
-        fprintf(stderr, "warning: could not write build/shot_level.ppm\n");
 
     render_shutdown();
     platform_shutdown();

@@ -426,7 +426,7 @@ void render_title(int blink_on)
     if (g_title.px && g_title.w == w && g_title.h == h) {
         blit_full(&g_title, 0, 0);
         if (!blink_on) {
-            for (int y = 188; y < 214 && y < h; y++) {
+            for (int y = 186; y < 204 && y < h; y++) {
                 for (int x = 70; x < 250 && x < w; x++) {
                     uint32_t c = platform_framebuffer()[y * w + x];
                     uint8_t r = (uint8_t)(((c >> 16) & 0xff) / 3);

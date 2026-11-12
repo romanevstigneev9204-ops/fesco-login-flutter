@@ -88,7 +88,9 @@ X = 40
 
 ## `title.png` — 320×224
 
-Полноэкранный титул: небо, холмы, надпись, силуэт героя, «PRESS START».
+Полноэкранный титул: небо, холмы, надпись SONIC THE HEDGEHOG 2, ёж, «PRESS START». Внизу строка `Fan game. Sega not involved.`
+
+Кадры idle/walk/run/hurt/look/crouch в `sonic.png` — синий ёж (иглы, бежевая морда, белые перчатки, красные ботинки). Roll, spindash и прыжок — синий шар.
 
 ## `sfx/*.wav`
 
