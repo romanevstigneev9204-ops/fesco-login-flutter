@@ -18,6 +18,7 @@ extern int platform_should_quit(void);
 extern void platform_present(void);
 extern int platform_save_ppm(const char *path);
 void input_begin_frame(Input *in);
+void game_sfx(const char *name);
 
 typedef enum GameState { STATE_TITLE = 0, STATE_LEVEL } GameState;
 
@@ -83,7 +84,53 @@ static int run_shots(void)
     int nobj = objects_load(objs, OBJECTS_MAX, "levels/emerald_hill_act1.txt");
     player_init(&pl, lv.start_x, lv.start_y);
 
-    render_frame(&pl, &lv, objs, nobj, 0, 0, 0, 0, 3);
+    Input demo;
+    memset(&demo, 0, sizeof demo);
+    player_tick(&pl, &demo, &col);
+    fx_t stood_y = pl.y;
+    fx_t start_x = pl.x;
+    fx_t peak_y = pl.y;
+    demo.right = 1;
+    for (int i = 0; i < 70; i++) {
+        demo.jump = (i >= 24 && i <= 55);
+        demo.jump_pressed = (i == 24);
+        player_tick(&pl, &demo, &col);
+        ObjEvent ev;
+        objects_tick(objs, nobj, &pl, &ev);
+        if (ev.rings_delta > 0)
+            pl.rings += ev.rings_delta;
+        if (pl.y < peak_y)
+            peak_y = pl.y;
+    }
+    int run_px = (int)((pl.x - start_x) / FX_ONE);
+    int jump_px = (int)((stood_y - peak_y) / FX_ONE);
+    fprintf(stderr, "playable: run %+d px, jump %+d px, anim %d, grounded %d\n", run_px, jump_px,
+            (int)pl.anim, pl.on_ground);
+    if (run_px < 16 || jump_px < 12) {
+        fprintf(stderr, "motion check failed (expected real player.c on the level)\n");
+        render_shutdown();
+        platform_shutdown();
+        return 1;
+    }
+
+    int cam_x = (int)(pl.x / FX_ONE) - 140;
+    int cam_y = (int)(pl.y / FX_ONE) - 150;
+    int max_x = lv.w * TILE_PX - 320;
+    int max_y = lv.h * TILE_PX - 224;
+    if (max_x < 0)
+        max_x = 0;
+    if (max_y < 0)
+        max_y = 0;
+    if (cam_x < 0)
+        cam_x = 0;
+    if (cam_y < 0)
+        cam_y = 0;
+    if (cam_x > max_x)
+        cam_x = max_x;
+    if (cam_y > max_y)
+        cam_y = max_y;
+
+    render_frame(&pl, &lv, objs, nobj, cam_x, cam_y, pl.rings * 100, 70, 3);
     platform_present();
     if (platform_save_ppm("build/shot_level.ppm") != 0)
         fprintf(stderr, "warning: could not write build/shot_level.ppm\n");
@@ -149,13 +196,44 @@ int main(int argc, char **argv)
                 }
             } else {
                 time_frames++;
+                int was_ground = pl.on_ground;
+                PlayerMode was_mode = pl.mode;
+                fx_t was_vy = pl.vy;
                 player_tick(&pl, &in, &col);
                 ObjEvent ev;
                 objects_tick(objs, nobj, &pl, &ev);
-                score += ev.rings_delta * 100;
+                if (ev.rings_delta > 0) {
+                    pl.rings += ev.rings_delta;
+                    score += ev.rings_delta * 100;
+                    game_sfx("ring");
+                }
+                if (was_ground && in.jump_pressed && pl.mode == PLAYER_AIR)
+                    game_sfx("jump");
+                if (was_mode == PLAYER_SPINDASH && pl.mode != PLAYER_SPINDASH)
+                    game_sfx("spindash");
+                if (!in.jump_pressed && pl.vy <= -2000 && pl.vy < was_vy)
+                    game_sfx("spring");
+                if (ev.extra_life)
+                    lives++;
+                if (ev.invincible && pl.invuln_timer < 300)
+                    pl.invuln_timer = 300;
+                if (ev.hurt)
+                    game_sfx("hurt");
+                if (ev.died) {
+                    lives--;
+                    if (lives > 0)
+                        player_init(&pl, lv.start_x, lv.start_y);
+                    else {
+                        lives = 3;
+                        score = 0;
+                        state = STATE_TITLE;
+                    }
+                }
                 camera_update(&cam_x, &cam_y, &pl, &lv);
-                if (ev.goal)
+                if (ev.goal) {
+                    game_sfx("goal");
                     state = STATE_TITLE;
+                }
             }
         }
 

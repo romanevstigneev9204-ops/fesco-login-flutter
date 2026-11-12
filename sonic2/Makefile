@@ -49,12 +49,12 @@ dirs:
 linux: dirs $(BUILD)/sonic2
 
 $(BUILD)/sonic2: $(ALL_SRCS)
-	$(CC_LINUX) -std=c11 -Wall -Wextra -O2 -I$(SRC) $(LINUX_CFLAGS) -o $@ $(ALL_SRCS) $(LINUX_LDFLAGS)
+	$(CC_LINUX) -std=c11 -Wall -Wextra -O2 -I$(SRC) -Ithird_party $(LINUX_CFLAGS) -o $@ $(ALL_SRCS) $(LINUX_LDFLAGS) -lm
 
 win: dirs $(BUILD)/sonic2.exe
 
 $(BUILD)/sonic2.exe: $(ALL_SRCS)
-	$(CC_WIN) -std=c11 -Wall -Wextra -O2 -I$(SRC) $(MINGW_CFLAGS) -o $@ $(ALL_SRCS) $(MINGW_LDFLAGS)
+	$(CC_WIN) -std=c11 -Wall -Wextra -O2 -I$(SRC) -Ithird_party $(MINGW_CFLAGS) -o $@ $(ALL_SRCS) $(MINGW_LDFLAGS) -lm
 
 shots: linux
 	@cd $(SRC)/.. && ./build/sonic2 --shot
