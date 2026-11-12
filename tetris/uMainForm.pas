@@ -125,7 +125,7 @@ begin
   LblLevel.Caption := IntToStr(FGame.Level);
   LblLines.Caption := IntToStr(FGame.Lines);
   if FGame.GameOver then
-    LblStatus.Caption := 'GAME OVER — R to restart'
+    LblStatus.Caption := 'GAME OVER' + LineEnding + 'Press R to restart'
   else if FGame.Paused then
     LblStatus.Caption := 'PAUSED'
   else

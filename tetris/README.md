@@ -2,17 +2,23 @@
 
 Playable Tetris: pure Free Pascal engine + Lazarus LCL window.
 
-## Layout
+## Quick start
 
-| Path | Role |
-|------|------|
-| `uTypes.pas` | Board size, cell values, `TPieceKind`, `TActivePiece` |
-| `uPieces.pas` | Shape tables, `GetPieceCells`, SRS-like wall kicks |
-| `uBoard.pas` | Collision, lock, line clear |
-| `uGame.pas` | `TGame` API |
-| `uMainForm.pas` / `.lfm` | LCL form: board, next piece, HUD, timer, keys |
-| `tetris.lpi` / `tetris.lpr` | Lazarus GUI project |
-| `tests/harness.lpr` | Console engine checks |
+Requires Free Pascal + Lazarus (`lazbuild`, LCL GTK2).
+
+```bash
+cd tetris && ./build_gui.sh && ./bin/tetris
+```
+
+Equivalent without the helper script:
+
+```bash
+cd tetris
+lazbuild --build-mode=Default tetris.lpi
+./bin/tetris
+```
+
+Binary: `tetris/bin/tetris`.
 
 ## Controls
 
@@ -25,18 +31,18 @@ Playable Tetris: pure Free Pascal engine + Lazarus LCL window.
 | P | Pause |
 | R / Enter | Restart after game over |
 
-## Build / run GUI
+## Layout
 
-Requires Free Pascal + Lazarus (`lazbuild`, LCL GTK2).
-
-```bash
-cd /path/to/repo/tetris
-mkdir -p bin lib
-lazbuild --build-mode=Default tetris.lpi
-./bin/tetris
-```
-
-Binary lands at `tetris/bin/tetris`.
+| Path | Role |
+|------|------|
+| `uTypes.pas` | Board size, cell values, `TPieceKind`, `TActivePiece` |
+| `uPieces.pas` | Shape tables, `GetPieceCells`, SRS-like wall kicks |
+| `uBoard.pas` | Collision, lock, line clear |
+| `uGame.pas` | `TGame` API |
+| `uMainForm.pas` / `.lfm` | LCL form: board, next piece, HUD, timer, keys |
+| `tetris.lpi` / `tetris.lpr` | Lazarus GUI project |
+| `build_gui.sh` | One-shot `lazbuild` wrapper |
+| `tests/harness.lpr` | Console engine checks |
 
 ## `TGame` contract
 
