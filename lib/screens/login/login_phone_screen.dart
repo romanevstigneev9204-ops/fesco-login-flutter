@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../../router/app_router.dart';
-import '../../router/routes.dart';
-import '../../theme/fesco_colors.dart';
 import '../../theme/fesco_typography.dart';
 import '../../widgets/fesco_login_scaffold.dart';
+import '../../widgets/fesco_logo_vertical.dart';
+import '../../widgets/fesco_phone_field.dart';
 import '../../widgets/fesco_primary_button.dart';
+import '../../widgets/phone_mask_formatter.dart';
 
 enum LoginPhoneUiPhase {
   /// Figma `1:710` — initial, no keyboard focus.
@@ -19,7 +19,7 @@ enum LoginPhoneUiPhase {
   keyboardFilled,
 }
 
-/// Phone entry stub covering Figma `1:710` / `1:943` / `1:574` UI phases.
+/// Phone entry — Figma `1:710` / `1:943` / `1:574`.
 class LoginPhoneScreen extends StatefulWidget {
   const LoginPhoneScreen({super.key});
 
@@ -29,13 +29,14 @@ class LoginPhoneScreen extends StatefulWidget {
 
 class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
   final FocusNode _focusNode = FocusNode();
-  final TextEditingController _digitsController = TextEditingController();
+  final TextEditingController _phoneController =
+      TextEditingController(text: '+7');
 
   @override
   void initState() {
     super.initState();
     _focusNode.addListener(_onFocusChange);
-    _digitsController.addListener(_onDigitsChanged);
+    _phoneController.addListener(_onPhoneChanged);
   }
 
   @override
@@ -43,15 +44,15 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
     _focusNode
       ..removeListener(_onFocusChange)
       ..dispose();
-    _digitsController
-      ..removeListener(_onDigitsChanged)
+    _phoneController
+      ..removeListener(_onPhoneChanged)
       ..dispose();
     super.dispose();
   }
 
   void _onFocusChange() => setState(() {});
 
-  void _onDigitsChanged() => setState(() {});
+  void _onPhoneChanged() => setState(() {});
 
   LoginPhoneUiPhase get _phase {
     final digits = _digitsOnly;
@@ -65,23 +66,9 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
   }
 
   String get _digitsOnly =>
-      _digitsController.text.replaceAll(RegExp(r'\D'), '');
+      PhoneMaskFormatter.extractDigits(_phoneController.text);
 
   bool get _canConfirm => _digitsOnly.length >= 10;
-
-  String get _routeNameForPhase => switch (_phase) {
-        LoginPhoneUiPhase.initial => FescoRoutes.loginPhone,
-        LoginPhoneUiPhase.keyboardEmpty =>
-          FescoRoutes.loginPhoneKeyboardEmpty,
-        LoginPhoneUiPhase.keyboardFilled =>
-          FescoRoutes.loginPhoneKeyboardFilled,
-      };
-
-  String get _figmaNodeForPhase => switch (_phase) {
-        LoginPhoneUiPhase.initial => '1:710',
-        LoginPhoneUiPhase.keyboardEmpty => '1:943',
-        LoginPhoneUiPhase.keyboardFilled => '1:574',
-      };
 
   void _confirmPhone() {
     if (!_canConfirm) return;
@@ -91,83 +78,49 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return FescoLoginScaffold(
-      figmaNodeId: _figmaNodeForPhase,
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 24),
-          _LogoPlaceholder(),
-          const SizedBox(height: 32),
-          Text(
-            'Личный кабинет сотрудника',
-            textAlign: TextAlign.center,
-            style: FescoTypography.titleOnAccent(context),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Если у вас еще нет аккаунта,\nон будет создан автоматически',
-            textAlign: TextAlign.center,
-            style: FescoTypography.subtitleOnAccent(context),
-          ),
-          const SizedBox(height: 32),
-          TextField(
-            focusNode: _focusNode,
-            controller: _digitsController,
-            keyboardType: TextInputType.phone,
-            style: FescoTypography.fieldValue(context),
-            decoration: InputDecoration(
-              labelText: 'Телефон',
-              prefixText: '+7 ',
-              hintText: _phase == LoginPhoneUiPhase.initial
-                  ? null
-                  : '(___) ___-__-__',
-            ),
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
-            ],
-            onTap: () {
-              if (!_focusNode.hasFocus) {
-                _focusNode.requestFocus();
-              }
-            },
-          ),
-          const SizedBox(height: 24),
-          FescoPrimaryButton(
-            label: 'Подтвердить номер',
-            enabled: _canConfirm,
-            onPressed: _confirmPhone,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'route: $_routeNameForPhase',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: FescoColors.textColorDisabled,
-              fontSize: 11,
-            ),
-          ),
-          const Spacer(),
-        ],
-      ),
-    );
-  }
-}
+    final showConfirm = _phase != LoginPhoneUiPhase.initial;
 
-class _LogoPlaceholder extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 80,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        border: Border.all(color: FescoColors.textColorDisabled.withValues(alpha: 0.4)),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: const Text(
-        'FescoLogoVertical (stub)',
-        style: TextStyle(color: FescoColors.textInverse, fontSize: 12),
+    return FescoLoginScaffold(
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: _phase == LoginPhoneUiPhase.initial ? 151 : 16),
+            const FescoLogoVertical(),
+            const SizedBox(height: 32),
+            Text(
+              'Личный кабинет сотрудника',
+              textAlign: TextAlign.center,
+              style: FescoTypography.titleOnAccent(context),
+            ),
+            const SizedBox(height: 8),
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: FescoTypography.subtitleOnAccent(context),
+                children: const [
+                  TextSpan(text: 'Если у вас еще нет аккаунта,\n'),
+                  TextSpan(text: 'он будет создан автоматически'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+            FescoPhoneField(
+              controller: _phoneController,
+              focusNode: _focusNode,
+              onSubmitted: _canConfirm ? _confirmPhone : null,
+            ),
+            if (showConfirm) ...[
+              const SizedBox(height: 24),
+              FescoPrimaryButton(
+                label: 'Подтвердить номер',
+                enabled: _canConfirm,
+                onPressed: _confirmPhone,
+              ),
+            ],
+            SizedBox(height: MediaQuery.viewInsetsOf(context).bottom + 24),
+          ],
+        ),
       ),
     );
   }

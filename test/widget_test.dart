@@ -9,7 +9,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Личный кабинет сотрудника'), findsOneWidget);
-    expect(find.textContaining('route: login-phone'), findsOneWidget);
+    expect(find.text('Телефон'), findsOneWidget);
+    expect(find.text('Подтвердить номер'), findsNothing);
   });
 
   testWidgets('navigates to OTP after full phone entry', (WidgetTester tester) async {
@@ -26,7 +27,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Код подтверждения'), findsOneWidget);
-    expect(find.textContaining('route: login-otp'), findsOneWidget);
     expect(find.textContaining('+7 910 234 56 75'), findsOneWidget);
+    expect(find.text('Отправить код еще раз'), findsOneWidget);
   });
 }
