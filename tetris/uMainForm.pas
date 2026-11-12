@@ -1,6 +1,7 @@
 unit uMainForm;
 
 {$mode objfpc}{$H+}
+{$codepage UTF8}
 
 interface
 
@@ -155,17 +156,17 @@ var
 begin
   B := LoadPersonalBests;
   if B.MarathonScore > 0 then
-    LblPbMarathon.Caption := Format('Marathon PB: %d', [B.MarathonScore])
+    LblPbMarathon.Caption := Format('Марафон рекорд: %d', [B.MarathonScore])
   else
-    LblPbMarathon.Caption := 'Marathon PB: —';
+    LblPbMarathon.Caption := 'Марафон рекорд: —';
   if B.Sprint40Ms > 0 then
-    LblPbSprint.Caption := 'Sprint PB: ' + FormatRaceTime(B.Sprint40Ms)
+    LblPbSprint.Caption := 'Спринт рекорд: ' + FormatRaceTime(B.Sprint40Ms)
   else
-    LblPbSprint.Caption := 'Sprint PB: —';
+    LblPbSprint.Caption := 'Спринт рекорд: —';
   if B.UltraScore > 0 then
-    LblPbUltra.Caption := Format('Ultra PB: %d', [B.UltraScore])
+    LblPbUltra.Caption := Format('Ультра рекорд: %d', [B.UltraScore])
   else
-    LblPbUltra.Caption := 'Ultra PB: —';
+    LblPbUltra.Caption := 'Ультра рекорд: —';
 end;
 
 procedure TMainForm.HighlightMenuSelection;
@@ -188,7 +189,7 @@ begin
   LblCountdown.Visible := False;
   RefreshMenuPb;
   HighlightMenuSelection;
-  Caption := 'Tetris';
+  Caption := 'Тетрис';
 end;
 
 procedure TMainForm.StartMode(AMode: TGameMode);
@@ -200,7 +201,7 @@ begin
   PanelMenu.Visible := False;
   PanelPlay.Visible := True;
   LblMode.Caption := GameModeName(AMode);
-  Caption := 'Tetris — ' + GameModeName(AMode);
+  Caption := 'Тетрис — ' + GameModeName(AMode);
   BeginCountdown;
   UpdateHud;
   PaintBoard.Invalidate;
@@ -213,9 +214,20 @@ begin
   FCountdownLeft := 3;
   FCountdownAccMs := 0;
   FGame.TogglePause; { pause until countdown ends }
+  { Center over the board (playfield), not the whole form / side panel. }
+  LblCountdown.AutoSize := False;
+  LblCountdown.Transparent := True;
+  LblCountdown.Alignment := taCenter;
+  LblCountdown.Layout := tlCenter;
+  LblCountdown.SetBounds(
+    PaintBoard.Left,
+    PaintBoard.Top + (PaintBoard.Height - 100) div 2,
+    PaintBoard.Width,
+    100);
   LblCountdown.Caption := '3';
   LblCountdown.Visible := True;
-  LblStatus.Caption := 'Get ready';
+  LblCountdown.BringToFront;
+  LblStatus.Caption := 'Приготовьтесь';
 end;
 
 procedure TMainForm.BeginPlaying;
@@ -271,7 +283,7 @@ begin
   Result := '';
   if FPhase = apCountdown then
   begin
-    Result := 'Get ready';
+    Result := 'Приготовьтесь';
     Exit;
   end;
   if FGame = nil then
@@ -280,20 +292,20 @@ begin
   begin
     case FGame.FinishReason of
       frGoalReached:
-        Result := 'CLEAR! ' + FormatRaceTime(FGame.ElapsedMs);
+        Result := 'ФИНИШ! ' + FormatRaceTime(FGame.ElapsedMs);
       frTimeUp:
-        Result := 'TIME UP' + LineEnding + 'Score ' + IntToStr(FGame.Score);
+        Result := 'ВРЕМЯ' + LineEnding + 'Очки ' + IntToStr(FGame.Score);
       frTopOut:
-        Result := 'TOP OUT';
+        Result := 'ПЕРЕПОЛНЕНИЕ';
     else
-      Result := 'GAME OVER';
+      Result := 'ИГРА ОКОНЧЕНА';
     end;
     if FLastPbImproved then
-      Result := Result + LineEnding + 'NEW PB!';
-    Result := Result + LineEnding + 'R retry · Esc menu';
+      Result := Result + LineEnding + 'НОВЫЙ РЕКОРД!';
+    Result := Result + LineEnding + 'R заново · Esc в меню';
   end
   else if FGame.Paused then
-    Result := 'PAUSED' + LineEnding + 'Esc menu';
+    Result := 'ПАУЗА' + LineEnding + 'Esc в меню';
 end;
 
 procedure TMainForm.UpdateHud;
@@ -306,29 +318,29 @@ begin
   case FGame.Mode of
     gmSprint40:
       begin
-        LblStat1Caption.Caption := 'TIME';
+        LblStat1Caption.Caption := 'ВРЕМЯ';
         LblStat1.Caption := FormatRaceTime(FGame.ElapsedMs);
-        LblStat2Caption.Caption := 'LEFT';
+        LblStat2Caption.Caption := 'ОСТАЛОСЬ';
         LblStat2.Caption := IntToStr(FGame.LinesRemaining);
-        LblStat3Caption.Caption := 'LINES';
+        LblStat3Caption.Caption := 'ЛИНИИ';
         LblStat3.Caption := Format('%d / %d', [FGame.Lines, SprintGoalLines]);
       end;
     gmUltra:
       begin
-        LblStat1Caption.Caption := 'SCORE';
+        LblStat1Caption.Caption := 'ОЧКИ';
         LblStat1.Caption := IntToStr(FGame.Score);
-        LblStat2Caption.Caption := 'LEFT';
+        LblStat2Caption.Caption := 'ОСТАЛОСЬ';
         LblStat2.Caption := FormatRaceTime(FGame.TimeRemainingMs);
-        LblStat3Caption.Caption := 'LINES';
+        LblStat3Caption.Caption := 'ЛИНИИ';
         LblStat3.Caption := IntToStr(FGame.Lines);
       end;
   else
     begin
-      LblStat1Caption.Caption := 'SCORE';
+      LblStat1Caption.Caption := 'ОЧКИ';
       LblStat1.Caption := IntToStr(FGame.Score);
-      LblStat2Caption.Caption := 'LEVEL';
+      LblStat2Caption.Caption := 'УРОВЕНЬ';
       LblStat2.Caption := IntToStr(FGame.Level);
-      LblStat3Caption.Caption := 'LINES';
+      LblStat3Caption.Caption := 'ЛИНИИ';
       LblStat3.Caption := IntToStr(FGame.Lines);
     end;
   end;
@@ -362,7 +374,7 @@ begin
           if FCountdownLeft > 0 then
             LblCountdown.Caption := IntToStr(FCountdownLeft)
           else if FCountdownLeft = 0 then
-            LblCountdown.Caption := 'GO'
+            LblCountdown.Caption := 'СТАРТ'
           else
             BeginPlaying;
         end;
