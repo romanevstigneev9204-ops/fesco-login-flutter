@@ -13,7 +13,7 @@ abstract final class FescoColors {
   /// OTP active underline (Figma Line 23 — `1:1096`).
   static const Color otpAccent = Color(0xFFFF6900);
 
-  static const Color primaryButtonDisabledFill = Color(0xFF8E9AAF);
+  static const Color primaryButtonDisabledFill = Color(0xFF98A4AE);
 
   static const Color backArrow = Color(0xFF0082C5);
 

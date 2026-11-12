@@ -51,10 +51,12 @@ class _OtpConfirmationScreenState extends State<OtpConfirmationScreen> {
     return FescoLoginScaffold(
       showBack: true,
       onBack: _goBack,
+      showOtpBottomStrip: true,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const SizedBox(height: 8),
+          const SizedBox(height: 30),
           Text(
             'Код подтверждения',
             textAlign: TextAlign.center,

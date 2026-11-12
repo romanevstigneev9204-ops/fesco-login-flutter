@@ -27,39 +27,41 @@ class FescoPhoneField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: FescoColors.bgPrimary,
-        borderRadius: BorderRadius.circular(2),
-        border: Border.all(color: FescoColors.borderFieldDefault),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Телефон', style: FescoTypography.fieldLabel(context)),
-          const SizedBox(height: 2),
-          SizedBox(
-            height: 22,
-            child: TextField(
-              controller: controller,
-              focusNode: focusNode,
-              keyboardType: TextInputType.phone,
-              style: FescoTypography.fieldValue(context),
-              decoration: const InputDecoration(
-                border: InputBorder.none,
-                isDense: true,
-                contentPadding: EdgeInsets.zero,
+    return SizedBox(
+      height: 44,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: FescoColors.bgPrimary,
+          borderRadius: BorderRadius.circular(2),
+          border: Border.all(color: FescoColors.borderFieldDefault),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Телефон', style: FescoTypography.fieldLabel(context)),
+              TextField(
+                controller: controller,
+                focusNode: focusNode,
+                keyboardType: TextInputType.phone,
+                style: FescoTypography.fieldValue(context),
+                decoration: const InputDecoration(
+                  border: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                  isCollapsed: true,
+                ),
+                inputFormatters: [
+                  PhoneMaskFormatter(),
+                ],
+                onTap: _ensureMaskOnTap,
+                onSubmitted: (_) => onSubmitted?.call(),
               ),
-              inputFormatters: [
-                PhoneMaskFormatter(),
-              ],
-              onTap: _ensureMaskOnTap,
-              onSubmitted: (_) => onSubmitted?.call(),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

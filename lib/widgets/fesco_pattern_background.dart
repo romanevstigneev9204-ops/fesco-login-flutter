@@ -5,10 +5,14 @@ import 'fesco_assets.dart';
 
 /// Decorative `pattern-03` layer from the login screens (right edge).
 class FescoPatternBackground extends StatelessWidget {
-  const FescoPatternBackground({super.key});
+  const FescoPatternBackground({super.key, this.showOtpBottomStrip = false});
+
+  final bool showOtpBottomStrip;
 
   @override
   Widget build(BuildContext context) {
+    final screenW = MediaQuery.sizeOf(context).width;
+
     return Positioned.fill(
       child: IgnorePointer(
         child: Stack(
@@ -18,7 +22,7 @@ class FescoPatternBackground extends StatelessWidget {
               right: -120,
               top: -40,
               bottom: 0,
-              width: MediaQuery.sizeOf(context).width + 200,
+              width: screenW + 200,
               child: Opacity(
                 opacity: 0.55,
                 child: SvgPicture.asset(
@@ -29,18 +33,30 @@ class FescoPatternBackground extends StatelessWidget {
               ),
             ),
             Positioned(
-              left: -200,
-              top: 80,
+              left: -335,
+              top: -91,
               child: Opacity(
-                opacity: 0.35,
+                opacity: 0.9,
                 child: SvgPicture.asset(
                   FescoAssets.patternBg,
-                  width: 360,
-                  height: 220,
-                  fit: BoxFit.contain,
+                  width: 695,
+                  height: 435,
+                  fit: BoxFit.fill,
                 ),
               ),
             ),
+            if (showOtpBottomStrip)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: 213,
+                child: Image.asset(
+                  FescoAssets.otpBottomShip,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                ),
+              ),
           ],
         ),
       ),

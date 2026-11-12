@@ -14,6 +14,8 @@ class FescoLoginScaffold extends StatelessWidget {
     this.showInfo = true,
     this.onInfo,
     this.bottomOverlay,
+    this.contentPadding = const EdgeInsets.symmetric(horizontal: 20),
+    this.showOtpBottomStrip = false,
   });
 
   final Widget body;
@@ -22,6 +24,8 @@ class FescoLoginScaffold extends StatelessWidget {
   final bool showInfo;
   final VoidCallback? onInfo;
   final Widget? bottomOverlay;
+  final EdgeInsetsGeometry contentPadding;
+  final bool showOtpBottomStrip;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +34,7 @@ class FescoLoginScaffold extends StatelessWidget {
       resizeToAvoidBottomInset: true,
       body: Stack(
         children: [
-          const FescoPatternBackground(),
+          FescoPatternBackground(showOtpBottomStrip: showOtpBottomStrip),
           SafeArea(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -43,7 +47,7 @@ class FescoLoginScaffold extends StatelessWidget {
                 ),
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: contentPadding,
                     child: body,
                   ),
                 ),

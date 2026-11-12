@@ -85,7 +85,7 @@ class _LoginPhoneScreenState extends State<LoginPhoneScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            SizedBox(height: _phase == LoginPhoneUiPhase.initial ? 48 : 16),
+            SizedBox(height: _phase == LoginPhoneUiPhase.initial ? 151 : 16),
             const FescoLogoVertical(),
             const SizedBox(height: 32),
             Text(
