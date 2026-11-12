@@ -3,6 +3,12 @@
 *.a
 *.or
 *.rsj
+*.res
+*.compiled
+lib/
+bin/
 tests/bin/
 *.exe
 tetris_harness
+*.lps
+backup/

@@ -1,22 +1,49 @@
-# Tetris engine (Object Pascal)
+# Tetris (Object Pascal / Lazarus LCL)
 
-Pure Free Pascal game logic — no LCL/UI. Intended for a later Lazarus form that calls into `TGame`.
+Playable Tetris: pure Free Pascal engine + Lazarus LCL window.
 
-## Units
+## Layout
 
-| Unit | Role |
+| Path | Role |
 |------|------|
 | `uTypes.pas` | Board size, cell values, `TPieceKind`, `TActivePiece` |
 | `uPieces.pas` | Shape tables, `GetPieceCells`, SRS-like wall kicks |
 | `uBoard.pas` | Collision, lock, line clear |
-| `uGame.pas` | `TGame` API for the UI |
+| `uGame.pas` | `TGame` API |
+| `uMainForm.pas` / `.lfm` | LCL form: board, next piece, HUD, timer, keys |
+| `tetris.lpi` / `tetris.lpr` | Lazarus GUI project |
+| `tests/harness.lpr` | Console engine checks |
 
-## `TGame` contract (for UI agent)
+## Controls
+
+| Key | Action |
+|-----|--------|
+| ← → | Move |
+| ↓ | Soft drop |
+| ↑ or X | Rotate CW |
+| Space | Hard drop |
+| P | Pause |
+| R / Enter | Restart after game over |
+
+## Build / run GUI
+
+Requires Free Pascal + Lazarus (`lazbuild`, LCL GTK2).
+
+```bash
+cd /path/to/repo/tetris
+mkdir -p bin lib
+lazbuild --build-mode=Default tetris.lpi
+./bin/tetris
+```
+
+Binary lands at `tetris/bin/tetris`.
+
+## `TGame` contract
 
 ```pascal
 G := TGame.Create;
 G.NewGame;
-G.Tick;            // gravity frame (wire to TTimer)
+G.Tick;            // gravity frame (wired to TTimer)
 G.MoveLeft / MoveRight;
 G.SoftDrop;
 G.HardDrop;
@@ -26,13 +53,11 @@ G.TogglePause;
 
 Readable state: `Board` (locked cells only), `Current` / `HasCurrent`, `NextPiece`, `Score`, `Level`, `Lines`, `Paused`, `GameOver`.
 
-Paint the falling piece with `GetPieceCells(G.Current, Cells)` from `uPieces` — do not expect it inside `Board`.
+Paint the falling piece with `GetPieceCells(G.Current, Cells)` from `uPieces` — it is not drawn into `Board`.
 
 Cell values: `0` empty, `1..7` = `Ord(TPieceKind)+1` (I J L O S T Z).
 
 ## Build / run harness
-
-Requires Free Pascal (`fpc`).
 
 ```bash
 cd /path/to/repo
@@ -40,5 +65,7 @@ mkdir -p tetris/tests/bin
 fpc -FUtetris -FEtetris/tests/bin -otetris_harness tetris/tests/harness.lpr
 ./tetris/tests/bin/tetris_harness
 ```
+
+Or: `./tetris/tests/build_and_run.sh`
 
 Exit code `0` = all checks passed.
