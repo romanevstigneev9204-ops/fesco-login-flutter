@@ -6,26 +6,24 @@
 #include "../src/player.h"
 #include "../src/world.h"
 
-static const char *special_path(void)
+#define SPECIAL_STAGES 7
+
+static int resolve_stage_path(int stage, char *out, size_t out_sz)
 {
-    static const char *candidates[] = {
-        "levels/special_stage_1.txt",
-        "../levels/special_stage_1.txt",
-        NULL,
+    const char *patterns[] = {
+        "levels/special_stage_%d.txt",
+        "../levels/special_stage_%d.txt",
     };
-    const char *from_env = getenv("SONIC2_SPECIAL");
-    FILE *f;
-    int i;
-    if (from_env && from_env[0])
-        return from_env;
-    for (i = 0; candidates[i]; i++) {
-        f = fopen(candidates[i], "r");
+    size_t i;
+    for (i = 0; i < sizeof patterns / sizeof patterns[0]; i++) {
+        snprintf(out, out_sz, patterns[i], stage);
+        FILE *f = fopen(out, "r");
         if (f) {
             fclose(f);
-            return candidates[i];
+            return 1;
         }
     }
-    return candidates[0];
+    return 0;
 }
 
 static int find_emerald(const Object *objs, int n, fx_t *ex, fx_t *ey)
@@ -41,7 +39,7 @@ static int find_emerald(const Object *objs, int n, fx_t *ex, fx_t *ey)
     return -1;
 }
 
-int main(void)
+static int finish_stage_gives_emerald(const char *path)
 {
     Level lv;
     ColWorld col;
@@ -52,33 +50,32 @@ int main(void)
     int nobj;
     int ei;
     ColInfo floor;
-    const char *path = special_path();
 
     if (!level_load(&lv, path)) {
         fprintf(stderr, "FAIL special level_load: %s\n", path);
-        return 1;
+        return 0;
     }
     if (lv.w < 40 || lv.h < 8) {
-        fprintf(stderr, "FAIL special size %dx%d\n", lv.w, lv.h);
-        return 2;
+        fprintf(stderr, "FAIL special size %dx%d (%s)\n", lv.w, lv.h, path);
+        return 0;
     }
 
     nobj = objects_load(objs, OBJECTS_MAX, path);
     if (nobj <= 0) {
-        fprintf(stderr, "FAIL special objects_load\n");
-        return 3;
+        fprintf(stderr, "FAIL special objects_load: %s\n", path);
+        return 0;
     }
     ei = find_emerald(objs, nobj, &ex, &ey);
     if (ei < 0) {
-        fprintf(stderr, "FAIL special emerald missing\n");
-        return 4;
+        fprintf(stderr, "FAIL special emerald missing: %s\n", path);
+        return 0;
     }
 
     level_bind(&col, &lv);
     floor = col.floor_at(col.ud, lv.start_x, lv.start_y + FX_ONE);
     if (!floor.hit) {
-        fprintf(stderr, "FAIL no floor under special start\n");
-        return 5;
+        fprintf(stderr, "FAIL no floor under special start: %s\n", path);
+        return 0;
     }
 
     memset(&p, 0, sizeof p);
@@ -88,22 +85,56 @@ int main(void)
     p.facing = 1;
     objects_tick(objs, nobj, &p, &ev);
     if (!ev.emerald) {
-        fprintf(stderr, "FAIL finish did not award emerald\n");
-        return 6;
+        fprintf(stderr, "FAIL finish did not award emerald: %s\n", path);
+        return 0;
     }
     if (objs[ei].alive) {
-        fprintf(stderr, "FAIL emerald still alive after pickup\n");
-        return 7;
+        fprintf(stderr, "FAIL emerald still alive after pickup: %s\n", path);
+        return 0;
+    }
+    return 1;
+}
+
+int main(void)
+{
+    char path[128];
+    int stage;
+    int emeralds = 0;
+    const char *single = getenv("SONIC2_SPECIAL");
+
+    if (single && single[0]) {
+        if (!finish_stage_gives_emerald(single))
+            return 1;
+        emeralds = 1;
+    } else {
+        for (stage = 1; stage <= SPECIAL_STAGES; stage++) {
+            if (!resolve_stage_path(stage, path, sizeof path)) {
+                fprintf(stderr, "FAIL missing special_stage_%d.txt\n", stage);
+                return 1;
+            }
+            if (!finish_stage_gives_emerald(path))
+                return 2;
+            emeralds++;
+        }
+    }
+
+    if (emeralds != SPECIAL_STAGES && !(single && single[0])) {
+        fprintf(stderr, "FAIL expected %d emeralds, got %d\n", SPECIAL_STAGES, emeralds);
+        return 3;
     }
 
     /* Checkpoint with 50 rings arms special entry. */
     {
         Object cp;
+        Player p;
+        ObjEvent ev;
         memset(&cp, 0, sizeof cp);
+        memset(&p, 0, sizeof p);
         cp.kind = OBJ_CHECKPOINT;
         cp.alive = 1;
         cp.x = FX_FROM_PX(100);
         cp.y = FX_FROM_PX(100);
+        p.alive = 1;
         p.x = cp.x;
         p.y = cp.y;
         p.rings = SPECIAL_RING_THRESHOLD;
@@ -115,6 +146,6 @@ int main(void)
         }
     }
 
-    printf("PASS special: pipe loads, emerald awarded, checkpoint entry ok\n");
+    printf("PASS special: %d finishes -> %d emeralds, checkpoint entry ok\n", emeralds, emeralds);
     return 0;
 }

@@ -47,8 +47,12 @@ static const ZoneInfo SPECIALS[] = {
     {"Special", "levels/special_stage_1.txt", "tiles_special.png"},
     {"Special", "levels/special_stage_2.txt", "tiles_special.png"},
     {"Special", "levels/special_stage_3.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_4.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_5.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_6.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_7.txt", "tiles_special.png"},
 };
-static const int SPECIAL_COUNT = (int)(sizeof SPECIALS / sizeof SPECIALS[0]);
+static const int SPECIAL_COUNT = (int)(sizeof SPECIALS / sizeof SPECIALS[0]); /* 7 chaos emeralds */
 static const int MENU_SPECIAL_INDEX = ZONE_COUNT; /* last menu row */
 static const int MENU_COUNT = ZONE_COUNT + 1;
 
@@ -263,9 +267,11 @@ int main(int argc, char **argv)
     int in_special = 0;
 
     const char *menu_names[16];
+    char special_label[24];
     for (int i = 0; i < ZONE_COUNT; i++)
         menu_names[i] = ZONES[i].name;
-    menu_names[MENU_SPECIAL_INDEX] = "Special";
+    snprintf(special_label, sizeof special_label, "Special %d", emerald_count);
+    menu_names[MENU_SPECIAL_INDEX] = special_label;
 
     const int frame_ms = 1000 / 60;
     uint32_t acc = 0;
@@ -381,9 +387,11 @@ int main(int argc, char **argv)
 
         if (state == STATE_TITLE)
             render_title((title_timer / 30) % 2);
-        else if (state == STATE_ZONE_MENU)
+        else if (state == STATE_ZONE_MENU) {
+            snprintf(special_label, sizeof special_label, "Special %d", emerald_count);
+            menu_names[MENU_SPECIAL_INDEX] = special_label;
             render_zone_menu(menu_names, MENU_COUNT, zone_sel, (menu_timer / 20) % 2);
-        else
+        } else
             render_frame(&pl, &lv, objs, nobj, cam_x, cam_y, score, time_frames, lives);
 
         platform_present();
