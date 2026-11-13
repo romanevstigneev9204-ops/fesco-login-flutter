@@ -1,0 +1,14 @@
+third_party/SDL2-*/
+third_party/*.tar.gz
+build/sonic2
+build/sonic2.exe
+build/SDL2.dll
+build/*.ppm
+build/test_player
+build/test_boss
+build/test_special
+build/*.o
+build/stubs/*.o
+src/*.o
+src/stubs/*.o
+*.exe
