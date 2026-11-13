@@ -231,11 +231,47 @@ static int run_shots(void)
     return 0;
 }
 
+/* Self-check: edge latched on a non-tick sample must survive until a tick. */
+static int run_input_check(void)
+{
+    int pending_jump = 0;
+    int s_jump_was = 0;
+    int ticks = 0;
+    int consumed = 0;
+
+    for (int frame = 0; frame < 8; frame++) {
+        /* Frames 0..2: spin without a sim tick (acc not ready). */
+        int jump_held = (frame >= 1 && frame <= 5);
+        int jump_pressed = jump_held && !s_jump_was;
+        s_jump_was = jump_held;
+        pending_jump |= jump_pressed;
+
+        int do_tick = (frame >= 3);
+        if (do_tick) {
+            ticks++;
+            if (pending_jump) {
+                consumed = 1;
+                pending_jump = 0;
+            }
+        }
+    }
+
+    if (!consumed || ticks < 1) {
+        fprintf(stderr, "input-check FAIL: pending edge was lost (consumed=%d ticks=%d)\n",
+                consumed, ticks);
+        return 1;
+    }
+    fprintf(stderr, "input-check OK: jump edge latched across non-tick frames\n");
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--shot") == 0)
             return run_shots();
+        if (strcmp(argv[i], "--input-check") == 0)
+            return run_input_check();
     }
 
     if (platform_init("Sonic 2") != 0)
@@ -277,10 +313,23 @@ int main(int argc, char **argv)
     uint32_t acc = 0;
     uint32_t last = SDL_GetTicks();
 
+    /* Latch edges across spin/render frames. input_begin_frame updates edge
+     * state every outer iteration; without a latch, jump_pressed is consumed
+     * on a frame where while(acc >= frame_ms) does not run. */
+    int pending_jump = 0;
+    int pending_up = 0;
+    int pending_down = 0;
+
     while (!platform_should_quit()) {
         platform_poll_events();
-        Input in;
-        input_begin_frame(&in);
+
+        Input sample;
+        input_begin_frame(&sample);
+        pending_jump |= sample.jump_pressed;
+        if (sample.up)
+            pending_up = 1;
+        if (sample.down)
+            pending_down = 1;
 
         uint32_t now = SDL_GetTicks();
         acc += now - last;
@@ -288,6 +337,13 @@ int main(int argc, char **argv)
 
         while (acc >= (uint32_t)frame_ms) {
             acc -= (uint32_t)frame_ms;
+            Input in = sample;
+            in.jump_pressed = pending_jump;
+            in.up = sample.up || pending_up;
+            in.down = sample.down || pending_down;
+            pending_jump = 0;
+            pending_up = 0;
+            pending_down = 0;
             if (state == STATE_TITLE) {
                 title_timer++;
                 if (in.jump_pressed)
