@@ -213,6 +213,14 @@ static void draw_object(const Object *o, int cam_x, int cam_y, int time_frames)
         (void)time_frames;
         break;
     }
+    case OBJ_EMERALD: {
+        /* Faceted chaos-emerald stand-in (original pixels, not Sega art). */
+        int pulse = ((time_frames / 8) & 1) ? 40 : 0;
+        fill_rect(x - 8, y - 20, 16, 20, rgba(20, 160 + pulse, 60));
+        fill_rect(x - 4, y - 24, 8, 6, rgba(80, 220, 120));
+        fill_rect(x - 2, y - 16, 4, 10, rgba(180, 255, 200));
+        break;
+    }
     default:
         break;
     }

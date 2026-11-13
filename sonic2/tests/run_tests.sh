@@ -12,3 +12,8 @@ ${CC} ${CFLAGS} -o "${OUT_PLAYER}" "${ROOT}/tests/test_player.c" "${ROOT}/src/pl
 OUT_BOSS="${ROOT}/build/test_boss"
 ${CC} ${CFLAGS} -o "${OUT_BOSS}" "${ROOT}/tests/test_boss.c" "${ROOT}/src/objects.c"
 "${OUT_BOSS}"
+
+OUT_SPECIAL="${ROOT}/build/test_special"
+${CC} ${CFLAGS} -o "${OUT_SPECIAL}" "${ROOT}/tests/test_special.c" \
+  "${ROOT}/src/world.c" "${ROOT}/src/objects.c"
+"${OUT_SPECIAL}"

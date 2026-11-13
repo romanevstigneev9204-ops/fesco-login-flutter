@@ -41,6 +41,9 @@
 `tiles_metropolis.png`, `tiles_sky_chase.png`, `tiles_wing_fortress.png`,
 `tiles_death_egg.png`.
 
+`tiles_special.png` — тот же формат для трёх полутруб особых этапов
+(`levels/special_stage_1.txt` … `_3.txt`).
+
 ## `objects.png` — 128×128
 
 Сетка объектов (левый верх листа = 0,0).
