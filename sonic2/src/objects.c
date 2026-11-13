@@ -130,6 +130,8 @@ int objects_load(Object *dst, int max, const char *path)
             o->kind = OBJ_BOSS;
             o->arg = BOSS_HITS; /* hits remaining */
             o->timer = 0;
+        } else if (strcmp(kind, "emerald") == 0) {
+            o->kind = OBJ_EMERALD;
         } else {
             continue;
         }
@@ -217,12 +219,24 @@ void objects_tick(Object *objs, int n, Player *p, ObjEvent *ev)
             }
             break;
         case OBJ_CHECKPOINT:
-            if (overlap(p, o))
-                o->arg = 1;
+            if (overlap(p, o)) {
+                if (o->arg == 0 && p->rings >= SPECIAL_RING_THRESHOLD) {
+                    o->arg = 2; /* armed + special trip */
+                    ev->special_enter = 1;
+                } else if (o->arg == 0) {
+                    o->arg = 1; /* ordinary checkpoint */
+                }
+            }
             break;
         case OBJ_GOAL:
             if (overlap(p, o))
                 ev->goal = 1;
+            break;
+        case OBJ_EMERALD:
+            if (overlap(p, o)) {
+                o->alive = 0;
+                ev->emerald = 1;
+            }
             break;
         case OBJ_BOSS:
             if (o->timer > 0)

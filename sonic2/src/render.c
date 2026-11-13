@@ -213,6 +213,14 @@ static void draw_object(const Object *o, int cam_x, int cam_y, int time_frames)
         (void)time_frames;
         break;
     }
+    case OBJ_EMERALD: {
+        /* Faceted chaos-emerald stand-in (original pixels, not Sega art). */
+        int pulse = ((time_frames / 8) & 1) ? 40 : 0;
+        fill_rect(x - 8, y - 20, 16, 20, rgba(20, 160 + pulse, 60));
+        fill_rect(x - 4, y - 24, 8, 6, rgba(80, 220, 120));
+        fill_rect(x - 2, y - 16, 4, 10, rgba(180, 255, 200));
+        break;
+    }
     default:
         break;
     }
@@ -481,11 +489,36 @@ static void draw_menu_char(int x, int y, char c, uint32_t col)
         {0x11, 0x11, 0x15, 0x1B, 0x11}, {0x11, 0x0A, 0x04, 0x0A, 0x11},
         {0x11, 0x0A, 0x04, 0x04, 0x04}, {0x1F, 0x02, 0x04, 0x08, 0x1F},
     };
+    static const unsigned char digits[10][5] = {
+        {0x0E, 0x11, 0x11, 0x11, 0x0E}, /* 0 */
+        {0x04, 0x0C, 0x04, 0x04, 0x0E}, /* 1 */
+        {0x0E, 0x01, 0x0E, 0x10, 0x1F}, /* 2 */
+        {0x1E, 0x01, 0x0E, 0x01, 0x1E}, /* 3 */
+        {0x11, 0x11, 0x1F, 0x01, 0x01}, /* 4 */
+        {0x1F, 0x10, 0x1E, 0x01, 0x1E}, /* 5 */
+        {0x0E, 0x10, 0x1E, 0x11, 0x0E}, /* 6 */
+        {0x1F, 0x01, 0x02, 0x04, 0x04}, /* 7 */
+        {0x0E, 0x11, 0x0E, 0x11, 0x0E}, /* 8 */
+        {0x0E, 0x11, 0x0F, 0x01, 0x0E}, /* 9 */
+    };
+    const unsigned char *colbits = NULL;
     if (c >= 'a' && c <= 'z')
         c = (char)(c - 'a' + 'A');
-    if (c < 'A' || c > 'Z')
+    if (c >= 'A' && c <= 'Z')
+        colbits = bits[c - 'A'];
+    else if (c >= '0' && c <= '9')
+        colbits = digits[c - '0'];
+    else if (c == '/') {
+        /* thin slash for N/7 style labels */
+        pix(x + 3, y + 0, col);
+        pix(x + 2, y + 1, col);
+        pix(x + 2, y + 2, col);
+        pix(x + 1, y + 3, col);
+        pix(x + 1, y + 4, col);
         return;
-    const unsigned char *colbits = bits[c - 'A'];
+    } else {
+        return;
+    }
     for (int row = 0; row < 5; row++) {
         unsigned char rowb = colbits[row];
         for (int colb = 0; colb < 5; colb++) {

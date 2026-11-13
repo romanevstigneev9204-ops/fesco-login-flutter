@@ -43,6 +43,19 @@ static const ZoneInfo ZONES[] = {
 };
 static const int ZONE_COUNT = (int)(sizeof ZONES / sizeof ZONES[0]);
 
+static const ZoneInfo SPECIALS[] = {
+    {"Special", "levels/special_stage_1.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_2.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_3.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_4.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_5.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_6.txt", "tiles_special.png"},
+    {"Special", "levels/special_stage_7.txt", "tiles_special.png"},
+};
+static const int SPECIAL_COUNT = (int)(sizeof SPECIALS / sizeof SPECIALS[0]); /* 7 chaos emeralds */
+static const int MENU_SPECIAL_INDEX = ZONE_COUNT; /* last menu row */
+static const int MENU_COUNT = ZONE_COUNT + 1;
+
 static void camera_update(int *cam_x, int *cam_y, const Player *p, const Level *lv)
 {
     int px = (int)(p->x / FX_ONE);
@@ -113,9 +126,10 @@ static void save_level_shot(const char *path, const Player *pl, const Level *lv,
         fprintf(stderr, "warning: could not write %s\n", path);
 }
 
-static int load_zone(Level *lv, ColWorld *col, Object *objs, int *nobj, Player *pl, int zone_index)
+static int load_level(Level *lv, ColWorld *col, Object *objs, int *nobj, Player *pl,
+                      const ZoneInfo *z, int keep_rings)
 {
-    const ZoneInfo *z = &ZONES[zone_index];
+    int rings = keep_rings ? pl->rings : 0;
     if (!level_load(lv, z->level_path)) {
         fprintf(stderr, "failed to load level: %s\n", z->level_path);
         return -1;
@@ -125,7 +139,18 @@ static int load_zone(Level *lv, ColWorld *col, Object *objs, int *nobj, Player *
     if (render_set_tiles(z->tiles_file) != 0)
         fprintf(stderr, "warning: tiles %s missing, keep previous\n", z->tiles_file);
     player_init(pl, lv->start_x, lv->start_y);
+    if (keep_rings)
+        pl->rings = rings;
     return 0;
+}
+
+static int special_index_for_emeralds(int emerald_count)
+{
+    if (emerald_count < 0)
+        emerald_count = 0;
+    if (emerald_count >= SPECIAL_COUNT)
+        return SPECIAL_COUNT - 1;
+    return emerald_count;
 }
 
 static int run_shots(void)
@@ -227,6 +252,7 @@ int main(int argc, char **argv)
     int nobj = 0;
     memset(&lv, 0, sizeof lv);
     memset(objs, 0, sizeof objs);
+    memset(&pl, 0, sizeof pl);
 
     GameState state = STATE_TITLE;
     int title_timer = 0;
@@ -237,10 +263,15 @@ int main(int argc, char **argv)
     int time_frames = 0;
     int lives = 3;
     int menu_nav_lock = 0;
+    int emerald_count = 0;
+    int in_special = 0;
 
-    const char *zone_names[16];
+    const char *menu_names[16];
+    char special_label[24];
     for (int i = 0; i < ZONE_COUNT; i++)
-        zone_names[i] = ZONES[i].name;
+        menu_names[i] = ZONES[i].name;
+    snprintf(special_label, sizeof special_label, "Special %d", emerald_count);
+    menu_names[MENU_SPECIAL_INDEX] = special_label;
 
     const int frame_ms = 1000 / 60;
     uint32_t acc = 0;
@@ -267,15 +298,24 @@ int main(int argc, char **argv)
                     menu_nav_lock--;
                 if (menu_nav_lock == 0) {
                     if (in.up) {
-                        zone_sel = (zone_sel + ZONE_COUNT - 1) % ZONE_COUNT;
+                        zone_sel = (zone_sel + MENU_COUNT - 1) % MENU_COUNT;
                         menu_nav_lock = 12;
                     } else if (in.down) {
-                        zone_sel = (zone_sel + 1) % ZONE_COUNT;
+                        zone_sel = (zone_sel + 1) % MENU_COUNT;
                         menu_nav_lock = 12;
                     }
                 }
                 if (in.jump_pressed) {
-                    if (load_zone(&lv, &col, objs, &nobj, &pl, zone_sel) == 0) {
+                    int ok = 0;
+                    if (zone_sel == MENU_SPECIAL_INDEX) {
+                        int si = special_index_for_emeralds(emerald_count);
+                        ok = load_level(&lv, &col, objs, &nobj, &pl, &SPECIALS[si], 0) == 0;
+                        in_special = 1;
+                    } else {
+                        ok = load_level(&lv, &col, objs, &nobj, &pl, &ZONES[zone_sel], 0) == 0;
+                        in_special = 0;
+                    }
+                    if (ok) {
                         state = STATE_LEVEL;
                         time_frames = 0;
                         cam_x = (int)(pl.x / FX_ONE) - 96;
@@ -314,12 +354,32 @@ int main(int argc, char **argv)
                     else {
                         lives = 3;
                         score = 0;
+                        in_special = 0;
                         state = STATE_TITLE;
                     }
                 }
                 camera_update(&cam_x, &cam_y, &pl, &lv);
-                if (ev.goal || ev.win) {
+                if (ev.special_enter && !in_special) {
+                    int si = special_index_for_emeralds(emerald_count);
+                    if (load_level(&lv, &col, objs, &nobj, &pl, &SPECIALS[si], 1) == 0) {
+                        in_special = 1;
+                        time_frames = 0;
+                        cam_x = (int)(pl.x / FX_ONE) - 96;
+                        cam_y = (int)(pl.y / FX_ONE) - 112;
+                        game_sfx("goal");
+                    }
+                }
+                if (ev.emerald) {
+                    emerald_count++;
+                    if (emerald_count > SPECIAL_COUNT)
+                        emerald_count = SPECIAL_COUNT;
+                    score += 1000;
                     game_sfx("goal");
+                    in_special = 0;
+                    state = STATE_ZONE_MENU;
+                } else if (ev.goal || ev.win) {
+                    game_sfx("goal");
+                    in_special = 0;
                     state = STATE_ZONE_MENU;
                 }
             }
@@ -327,9 +387,11 @@ int main(int argc, char **argv)
 
         if (state == STATE_TITLE)
             render_title((title_timer / 30) % 2);
-        else if (state == STATE_ZONE_MENU)
-            render_zone_menu(zone_names, ZONE_COUNT, zone_sel, (menu_timer / 20) % 2);
-        else
+        else if (state == STATE_ZONE_MENU) {
+            snprintf(special_label, sizeof special_label, "Special %d", emerald_count);
+            menu_names[MENU_SPECIAL_INDEX] = special_label;
+            render_zone_menu(menu_names, MENU_COUNT, zone_sel, (menu_timer / 20) % 2);
+        } else
             render_frame(&pl, &lv, objs, nobj, cam_x, cam_y, score, time_frames, lives);
 
         platform_present();
