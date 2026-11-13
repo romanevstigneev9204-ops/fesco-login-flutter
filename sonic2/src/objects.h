@@ -10,8 +10,11 @@ typedef enum ObjKind {
     OBJ_SPIKE,
     OBJ_MOTOBUG,
     OBJ_CHECKPOINT,
-    OBJ_GOAL
+    OBJ_GOAL,
+    OBJ_BOSS,
+    OBJ_EMERALD
 } ObjKind;
+#define SPECIAL_RING_THRESHOLD 50
 typedef enum MonitorKind {
     MON_RINGS = 1,
     MON_SHIELD,
@@ -35,6 +38,9 @@ typedef struct ObjEvent {
     int speed_shoes;
     int invincible;
     int extra_life;
+    int win; /* boss defeated */
+    int special_enter; /* checkpoint with enough rings */
+    int emerald;       /* chaos emerald collected in special stage */
 } ObjEvent;
 int objects_load(Object *dst, int max, const char *path);
 void objects_tick(Object *objs, int n, Player *p, ObjEvent *ev);

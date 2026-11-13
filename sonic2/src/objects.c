@@ -5,6 +5,27 @@
 #include <string.h>
 
 #define HIT_RADIUS FX_FROM_PX(12)
+#define BOSS_HIT_RADIUS FX_FROM_PX(20)
+#define BOSS_HITS 8
+#define BOSS_IFRAMES 30
+
+static int abs_fx(fx_t v);
+
+static int overlap_r(Player *p, Object *o, fx_t radius)
+{
+    fx_t dx = p->x - o->x;
+    fx_t dy = p->y - o->y;
+    return abs_fx(dx) < radius && abs_fx(dy) < radius;
+}
+
+static int player_attacking(const Player *p)
+{
+    if (p->mode == PLAYER_ROLL || p->mode == PLAYER_SPINDASH)
+        return 1;
+    if (p->mode == PLAYER_AIR && (p->anim == ANIM_ROLL || p->anim == ANIM_JUMP))
+        return 1;
+    return 0;
+}
 
 static MonitorKind parse_monitor(const char *s)
 {
@@ -33,13 +54,11 @@ static fx_t parse_coord(const char *s, int as_fx)
     return as_fx ? (fx_t)v : FX_FROM_PX(v);
 }
 
-static int abs_fx(fx_t v) { return v < 0 ? -v : v; }
+static int abs_fx(fx_t v) { return v < 0 ? (int)(-v) : (int)v; }
 
 static int overlap(Player *p, Object *o)
 {
-    fx_t dx = p->x - o->x;
-    fx_t dy = p->y - o->y;
-    return abs_fx(dx) < HIT_RADIUS && abs_fx(dy) < HIT_RADIUS;
+    return overlap_r(p, o, HIT_RADIUS);
 }
 
 int objects_load(Object *dst, int max, const char *path)
@@ -107,6 +126,12 @@ int objects_load(Object *dst, int max, const char *path)
             o->kind = OBJ_CHECKPOINT;
         } else if (strcmp(kind, "goal") == 0) {
             o->kind = OBJ_GOAL;
+        } else if (strcmp(kind, "boss") == 0) {
+            o->kind = OBJ_BOSS;
+            o->arg = BOSS_HITS; /* hits remaining */
+            o->timer = 0;
+        } else if (strcmp(kind, "emerald") == 0) {
+            o->kind = OBJ_EMERALD;
         } else {
             continue;
         }
@@ -194,12 +219,44 @@ void objects_tick(Object *objs, int n, Player *p, ObjEvent *ev)
             }
             break;
         case OBJ_CHECKPOINT:
-            if (overlap(p, o))
-                o->arg = 1;
+            if (overlap(p, o)) {
+                if (o->arg == 0 && p->rings >= SPECIAL_RING_THRESHOLD) {
+                    o->arg = 2; /* armed + special trip */
+                    ev->special_enter = 1;
+                } else if (o->arg == 0) {
+                    o->arg = 1; /* ordinary checkpoint */
+                }
+            }
             break;
         case OBJ_GOAL:
             if (overlap(p, o))
                 ev->goal = 1;
+            break;
+        case OBJ_EMERALD:
+            if (overlap(p, o)) {
+                o->alive = 0;
+                ev->emerald = 1;
+            }
+            break;
+        case OBJ_BOSS:
+            if (o->timer > 0)
+                o->timer--;
+            if (overlap_r(p, o, BOSS_HIT_RADIUS)) {
+                if (player_attacking(p) && o->timer <= 0) {
+                    o->arg--;
+                    o->timer = BOSS_IFRAMES;
+                    if (p->mode == PLAYER_AIR)
+                        p->vy = -FX_FROM_PX(3);
+                    if (o->arg <= 0) {
+                        o->alive = 0;
+                        ev->win = 1;
+                    }
+                } else if (!player_attacking(p) && p->invuln_timer <= 0 && o->timer <= 0) {
+                    ev->hurt = 1;
+                    p->hurt_timer = 90;
+                    p->invuln_timer = 120;
+                }
+            }
             break;
         default:
             break;
