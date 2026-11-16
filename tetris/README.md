@@ -1,8 +1,8 @@
-# Tetris (Object Pascal / Lazarus LCL)
+# Тетрис (Object Pascal / Lazarus LCL)
 
-Playable Tetris: pure Free Pascal engine + Lazarus LCL window.
+Играбельный тетрис: движок на Free Pascal + окно Lazarus LCL.
 
-Modes: **Marathon**, **40-Line Sprint**, **Ultra 2:00** — pick on the launch menu.
+Режимы: **Марафон**, **Спринт 40 линий**, **Ультра 2:00** — выбор в стартовом меню.
 
 ## Quick start
 
@@ -22,31 +22,31 @@ lazbuild --build-mode=Default tetris.lpi
 
 Binary: `tetris/bin/tetris`.
 
-## Modes
+## Режимы
 
-| Mode | Goal | HUD | Personal best |
+| Режим | Цель | HUD | Рекорд |
 |------|------|-----|---------------|
-| Marathon | Survive (top-out ends) | Score / Level / Lines | Highest score |
-| 40-Line Sprint | Clear 40 lines | Elapsed time / lines left / lines | Fastest time |
-| Ultra 2:00 | Score in 2 minutes | Score / time left / lines | Highest score |
+| Марафон | Выжить (конец при переполнении) | Очки / Уровень / Линии | Лучший счёт |
+| Спринт 40 линий | Сбросить 40 линий | Время / осталось / линии | Лучшее время |
+| Ультра 2:00 | Набрать очки за 2 минуты | Очки / осталось / линии | Лучший счёт |
 
-Sprint and Ultra start with a **3-2-1-GO** countdown. Esc returns to the mode menu (also after game over).
+Перед стартом — обратный отсчёт **3-2-1-СТАРТ** по центру поля. Esc возвращает в меню режимов (также после окончания партии).
 
-Local PB file: `tetris-scores.ini` under the user config dir (`GetAppConfigDir`), e.g. `~/.config/tetris/tetris-scores.ini` on Linux.
+Файл рекордов: `tetris-scores.ini` в каталоге конфигурации пользователя (`GetAppConfigDir`), например `~/.config/tetris/tetris-scores.ini` на Linux.
 
-## Controls
+## Управление
 
-| Key | Action |
+| Клавиша | Действие |
 |-----|--------|
-| ↑↓ / 1–3 / click | Menu: select / start mode |
-| Enter / Space | Menu: confirm |
-| ← → | Move |
-| ↓ | Soft drop |
-| ↑ or X | Rotate CW |
-| Space | Hard drop |
-| P | Pause |
-| Esc | Back to menu (quit from menu) |
-| R / Enter | Retry same mode after finish |
+| ↑↓ / 1–3 / клик | Меню: выбор / старт режима |
+| Enter / Пробел | Меню: подтвердить |
+| ← → | Движение |
+| ↓ | Мягкий сброс |
+| ↑ или X | Поворот по часовой |
+| Пробел | Жёсткий сброс |
+| P | Пауза |
+| Esc | В меню (из меню — выход) |
+| R / Enter | Заново тот же режим после финиша |
 
 ## Layout
 
